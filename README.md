@@ -6,3 +6,8 @@ This repository is part of a joined project between [Eberhard Karls Universität
 ## Documentation
 
 A detailed communication flow is described [here](./docs.md).
+
+
+## Projects
+
+- [User Agent](./user-agent/README.md) running as web application on the user's smartphone.
