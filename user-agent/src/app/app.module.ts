@@ -1,4 +1,6 @@
 import { NgModule } from '@angular/core';
+import { MatButtonModule } from '@angular/material/button';
+import { MatStepperModule } from '@angular/material/stepper';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { BrowserModule } from '@angular/platform-browser';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
@@ -19,6 +21,8 @@ import { HomeComponent } from './components/home/home.component';
     AppRoutingModule,
     BrowserModule,
     BrowserAnimationsModule,
+    MatButtonModule,
+    MatStepperModule,
     MatToolbarModule,
     OAuthModule.forRoot(),
   ],
