@@ -1,87 +1,195 @@
 import { Component, OnInit } from '@angular/core';
-
-import { BleService } from '../../services/ble.service';
+import { FormBuilder, Validators } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
-import { EMSP } from 'src/app/emsp';
+
+import { AuthService, OAUTH_REDIRECT_URI_PATH } from '../../services/auth/auth.service';
+import { EmspService } from '../../services/emsp/emsp.service';
+import { EvService } from '../../services/ev/ev.service';
+import { EMSP } from '../../types/emsp.interface';
 
 @Component({
   selector: 'app-connect',
   templateUrl: './connect.component.html',
-  styleUrls: ['./connect.component.scss']
+  styleUrls: ['./connect.component.scss'],
 })
 export class ConnectComponent implements OnInit {
-  name?: string;
-  device?: BluetoothRemoteGATTServer;
-  emsps: EMSP[] = [];
-  emsp?: EMSP;
 
   constructor(
-    private readonly bleService: BleService,
     private readonly activatedRoute: ActivatedRoute,
+    private readonly authService: AuthService,
+    private readonly emspService: EmspService,
+    private readonly evService: EvService,
+    private readonly formBuilder: FormBuilder,
   ) { }
 
-  private getDeviceName(): Promise<string> {
-    return new Promise<string>((resolve, reject) => {
-      this.activatedRoute.queryParams.subscribe(params => {
-        const name = params['name'];
-        this.name = name;
-        if (name) {
-          resolve(name);
-        } else {
-          reject('Name not provided!');
-        }
+  // Component lifecycle:
+
+  /**
+   * Initializes the component.
+   */
+  public ngOnInit(): void {
+    // Apply the EV name from the URL query parameter.
+    this.applyEvNameFromRoute();
+  }
+
+  // Connect step:
+
+  /**
+   * The form group for the EV connection step.
+   */
+  connectEvFormGroup = this.formBuilder.group({
+    name: ['', Validators.required],
+    connected: [false, Validators.requiredTrue],
+  });
+
+  /**
+   * Whether the app is connecting to the EV.
+   */
+  isConnectingToEv: boolean = false;
+
+  /**
+   * The error message thrown when connecting to EV.
+   */
+  connectEvError?: string;
+
+  /**
+   * Sets the EV's name from URL query parameter to the input field, if provided.
+   */
+  private async applyEvNameFromRoute(): Promise<void> {
+    // Get the EV name from URL query parameter.
+    const name = await this.getEvNameFromRoute();
+
+    // Apply name if found.
+    if (name) {
+      this.connectEvFormGroup.controls.name.setValue(name);
+    }
+  }
+
+  /**
+   * Gets the name of the EV from current route's URL query parameter.
+   * @returns Name of the EV or undefined if not found.
+   */
+  private getEvNameFromRoute(): Promise<string | undefined> {
+    return new Promise<string>((resolve) => {
+      this.activatedRoute.queryParams.subscribe((params) => {
+        resolve(params['name'] ?? undefined);
       });
     });
   }
 
-  private async findName(): Promise<void> {
+  /**
+   * Connects to an EV.
+   * @param name Name of EV.
+   */
+  async connectEv(name: string): Promise<void> {
+    // Clear error.
+    this.connectEvError = undefined;
+
+    // Indicate that the app is trying to connect to the EV.
+    this.isConnectingToEv = true;
+
+    // Reset connected value.
+    this.connectEvFormGroup.controls.connected.setValue(false);
+
     try {
-      // Get the EV name from query parameter.
-      this.name = await this.getDeviceName();
+      // Connect to EV.
+      const ev = await this.evService.connect(name);
+
+      // Request available eMSPs from EV.
+      await this.emspService.updateEmsps(ev);
+      // List available eMSPs.
+      this.availableEmsps = [...this.emspService.getEmsps()];
+
+      // Update connected value.
+      this.connectEvFormGroup.controls.connected.setValue(true);
     } catch (e) {
-      throw 'Failed to get name: ' + e;
-    }
-  }
+      // Log error.
+      console.error('Failed to connect to EV!', e);
 
-  async connect(name: string): Promise<BluetoothRemoteGATTServer> {
-    try {
-      // Connect to the EV via BLE.
-      const gattServer = await this.bleService.connect(name);
-
-      // Return the connected GATT server of the EV.
-      return gattServer;
-    } catch (e) {
-      throw 'Failed to connect to EV: ' + e;
-    }
-  }
-
-  async selectEmsp(emsp: EMSP) {
-    this.emsp = emsp;
-  }
-
-  async getEMSPs(): Promise<EMSP[]> {//device: BluetoothRemoteGATTServer): Promise<EMSP[]> {
-    return [
-      {
-        base_url: 'http://localhost:8080',
-        image: 'https://upload.wikimedia.org/wikipedia/commons/e/e6/Ionity_logo_cmyk.svg',
-        name: 'Ionity',
-        client_id: 'ionity_ev',
+      // Display error.
+      if (e instanceof Error) {
+        this.connectEvError = e.message;
+      } else {
+        this.connectEvError = 'Unknown connect error occurred: ' + e;
       }
-    ];
+    } finally {
+      // Indicate that the app is no more trying to connect to the EV.
+      this.isConnectingToEv = false;
+    }
   }
 
-  async initializeConnection(name: string): Promise<void> {
-    // Connect to device:
-    // const device = await this.connect(name);
+  // Authorize eMSP step:
 
-    // Request eligible eMSPs:
-    this.emsps = await this.getEMSPs();//device);
+  /**
+   * Array of avaialable eMSPs.
+   */
+  availableEmsps?: EMSP[];
 
+  /**
+   * The form group for the eMSP authorization step.
+   */
+  authorizeEmspFormGroup = this.formBuilder.group({
+    emspId: ['', Validators.required],
+    authorized: [false, Validators.requiredTrue],
+  });
 
+  /**
+   * Whether the app is authorizing to eMSP.
+   */
+  isAuthorizingEmsp: boolean = false;
 
-  }
+  /**
+   * The error message thrown when authorizing to eMSP.
+   */
+  authorizeEmspError?: string;
 
-  public ngOnInit(): void {
-    this.findName();
+  /**
+   * Requests authorization to an eMSP.
+   * @param emspId The ID of the eMSP to authorize to.
+   */
+  async authorizeEmsp(emspId: string): Promise<void> {
+    // Clear error.
+    this.authorizeEmspError = undefined;
+
+    // Indicate that app is trying to authorize to eMSP.
+    this.isAuthorizingEmsp = true;
+
+    // Reset authorized value.
+    this.authorizeEmspFormGroup.controls.authorized.setValue(false);
+
+    try {
+      // Get the eMSP by ID or throw exception.
+      const emsp = this.emspService.getEmspById(emspId);
+      if (!emsp) throw new Error(`EMSP with ID "${emspId}" not found!`);
+
+      // Initialize eMSP authorization.
+      await this.authService.authorize(emsp.base_url, {
+        authorizationDetails: [
+          // TODO: add rich authorization details here.
+        ],
+        scopes: [
+          // TODO: add scopes here.
+        ],
+        clientOptions: {
+          client_id: emsp.client_id,
+          redirect_uri: window.location.origin + '/' + OAUTH_REDIRECT_URI_PATH,
+        }
+      });
+
+      // Update authorized value.
+      this.authorizeEmspFormGroup.controls.authorized.setValue(true);
+    } catch (e) {
+      // Log error.
+      console.error('Failed to obtain authorization from eMSP!', e);
+
+      // Display error.
+      if (e instanceof Error) {
+        this.authorizeEmspError = e.message;
+      } else {
+        this.authorizeEmspError = 'Unknown authorization error occurred: ' + e;
+      }
+    } finally {
+      this.isAuthorizingEmsp = false;
+    }
   }
 }

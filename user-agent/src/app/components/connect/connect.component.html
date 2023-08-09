@@ -1,18 +1,76 @@
-<p *ngIf="!name">Name not found</p>
+<mat-vertical-stepper [linear]="true" #stepper>
+  <!-- Connect EV step: -->
+  <mat-step [stepControl]="connectEvFormGroup">
+    <form [formGroup]="connectEvFormGroup">
+      <ng-template matStepLabel>Connect EV</ng-template>
 
-<mat-vertical-stepper [linear]="false" #stepper>
-    <mat-step><!-- [stepControl]="firstFormGroup">-->
-        <div class="connect-button-container" *ngIf="name">
-            <button mat-raised-button color="primary" (click)="initializeConnection(name)">Connect to {{name}}</button>
-        </div>
-    </mat-step>
-    <mat-step>
-      <button *ngFor="let emsp of emsps" (click)="selectEmsp(emsp)">
-        <img *ngIf="emsp.image" [src]="emsp.image">
-        <span>{{ emsp.name }}</span>
-      </button>
-    </mat-step>
-    <mat-step>
-      <span>Authorizing {{name}} via {{ emsp?.name }}...</span>
-    </mat-step>
-  </mat-vertical-stepper>
+      <!-- The EV name input field: -->
+      <mat-form-field>
+        <mat-label>EV name</mat-label>
+        <input matInput placeholder="MyEV" formControlName="name" required>
+      </mat-form-field>
+
+      <!-- The connecting progress indicator: -->
+      <div *ngIf="isConnectingToEv">
+        <span>Connecting ...</span>
+        <mat-progress-bar mode="indeterminate"></mat-progress-bar>
+      </div>
+
+      <!-- Connect error: -->
+      <div *ngIf="connectEvError">
+        <mat-error>{{ connectEvError }}</mat-error>
+      </div>
+
+      <!-- The connect button: -->
+      <div>
+        <button
+            mat-raised-button matStepperNext color="primary"
+            [disabled]="isConnectingToEv"
+            (click)="connectEv(connectEvFormGroup.controls.name.value!)">
+          Connect
+        </button>
+      </div>
+    </form>
+  </mat-step>
+
+  <!-- Authorize to eMSP step: -->
+  <mat-step>
+    <form [formGroup]="authorizeEmspFormGroup">
+      <ng-template matStepLabel>Select EMSP</ng-template>
+
+      <!-- The eMSP selection radio buttons: -->
+      <mat-radio-group *ngIf="availableEmsps" formControlName="emspId">
+        <mat-radio-button *ngFor="let emsp of availableEmsps" [value]="emsp.id">
+          <img class="emsp-img" *ngIf="emsp.image" [src]="emsp.image">
+          <br>
+          <span>{{emsp.name}}</span>
+        </mat-radio-button>
+      </mat-radio-group>
+
+      <!-- The authorizing progress indicator: -->
+      <div *ngIf="isAuthorizingEmsp">
+        <span>Waiting for authorization ...</span>
+        <mat-progress-bar mode="indeterminate"></mat-progress-bar>
+      </div>
+
+      <!-- Authorization error: -->
+      <div *ngIf="authorizeEmspError">
+        <mat-error>{{ authorizeEmspError }}</mat-error>
+      </div>
+
+      <!-- The authorize button: -->
+      <div>
+        <button mat-raised-button matStepperNext color="primary"
+            [disabled]="!authorizeEmspFormGroup.controls.emspId.value || isAuthorizingEmsp"
+            (click)="authorizeEmsp(authorizeEmspFormGroup.controls.emspId.value!)">
+          Authorize
+        </button>
+      </div>
+    </form>
+  </mat-step>
+
+  <!-- Final step: -->
+  <mat-step>
+    <span>All done!</span>
+  </mat-step>
+</mat-vertical-stepper>
