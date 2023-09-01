@@ -229,7 +229,7 @@ def get_next_payload(service=None):
     body = '{"timestamp":"2017-05-04T01:38:00.336090Z","type":"sensor_update","parameters":{"values":[12.0],"name":"light"}}'
     if service:
         response = requests.get(service.http_uri_chrc.uri)
-        body = str(response.content)
+        body = response.content
     return body
 
 def charc_rw_cb(charc, read_or_write, options, value):
