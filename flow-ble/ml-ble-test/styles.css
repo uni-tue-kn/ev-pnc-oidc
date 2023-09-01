@@ -1,0 +1,63 @@
+body {
+  background-color: #0375b4;
+}
+
+#container {
+  top: 0;
+  right: 0;
+  left: 0;
+  bottom: 0;
+  background-color: #0375b4; 
+  font-family: Roboto;
+}
+
+#statusText {
+  top: 10px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  margin: 0 auto;
+  font-size: 16px;
+  height: 20%;
+  width: 300px;
+  overflow-x: visible;
+  cursor: default;
+  padding: 5px 0;
+  -webkit-user-select: none;
+}
+
+#buttonDiv {
+  text-align: center;
+  margin: 0 auto;
+  font-size: 16px;
+  height: 10%;
+  width: 300px;
+  overflow-x: visible;
+  padding: 5px 0;
+  -webkit-user-select: none;  
+}
+
+
+#responseText {
+  position: absolute;
+  bottom: 5px;
+  left: 0;
+  right: 0;
+  margin: 5 auto;
+  font-size: 14px;
+  height: 70%;
+  width: 99%;
+  overflow-x: visible;
+  cursor: default;
+  padding-left: 5px;
+  padding-right: 5px;
+  overflow-y: scroll;
+  background-color: #007849; 
+}
+
+
+#waves {
+  width: 100%;
+  height: 10%;
+  display: block;
+}

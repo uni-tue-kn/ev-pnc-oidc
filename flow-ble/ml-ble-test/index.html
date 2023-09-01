@@ -1,0 +1,28 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manylabs Web Bluetooth Demo</title>
+    <meta name="description" content="Monitor a Manylabs RasPi sensors">
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <div id="raspi">
+    </div>
+    <div id="container">
+        <div id="statusText" >
+          <img src="ml-raspi.jpg" id="raspiImg"  />
+        </div>
+      <div id="buttonDiv" onClick="">
+        <button type="button" id="selectButton" >Select Device</button>
+        <button type="button" onClick="responseText.textContent = '';">Clear</button>
+      </div>
+        <div id="responseText">
+        </div>
+      <canvas id="waves"></canvas>
+    </div>
+    <script src="manylabsble.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>

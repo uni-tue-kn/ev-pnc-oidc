@@ -1,0 +1,16 @@
+[Unit]
+Description=Manylabs Flow BLE Service
+After=syslog.target bluetooth.target flowbleadv.service
+Requires=flowbleadv.service
+
+[Service]
+PIDFile=/var/run/hpserver.pid
+#Type=simple
+#WorkingDirectory=/usr/local/example
+ExecStart=/home/pi/flow-ble/gattserver/hpserver.py
+Restart=on-failure
+LimitNOFILE=10000
+
+[Install]
+WantedBy=multi-user.target
+

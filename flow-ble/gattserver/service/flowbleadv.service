@@ -1,0 +1,14 @@
+[Unit]
+Description=Manylabs Flow BLE Service Advertisement
+After=syslog.target bluetooth.target 
+
+[Service]
+PIDFile=/var/run/mladvertise.pid
+#Type=simple
+ExecStart=/home/pi/flow-ble/gattserver/hpadvertise.py
+Restart=on-failure
+LimitNOFILE=10000
+
+[Install]
+WantedBy=multi-user.target
+
