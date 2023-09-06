@@ -1,262 +1,133 @@
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { encodeBase64url } from '@jonasprimbs/byte-array-converter';
+import { ActivatedRoute } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
+
+import { DiscoveryDocument } from '../../types/discovery-document.interface';
+
+/**
+ * Prefix of Key for Authorization Code in Local Storage.
+ */
+const OAUTH_AUTH_CODE_KEY_PREFIX = 'oauth_auth_code_';
 
 @Injectable({
   providedIn: 'root',
 })
 export class AuthService {
+
+  /**
+   * Constructs a new Auth Service instance.
+   * @param http HTTP Client.
+   * @param activatedRoute Activated Route.
+   */
   constructor(
     private readonly http: HttpClient,
+    private readonly activatedRoute: ActivatedRoute,
   ) { }
 
-  private generateRandomString(length: number, characters: string = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'): string {
-    const charLength = characters.length;
-    let result = '';
-    for (let i = 0; i < length; i++) {
-      result += characters.charAt(Math.floor(Math.random() * charLength));
-    }
-    return result;
-  }
-
-  private generatePkceVerifier(): string {
-    const arrayBuffer = new Uint8Array(32);
-    const randomBytes = crypto.getRandomValues(arrayBuffer);
-    return encodeBase64url(randomBytes);
-  }
-  private async computePkceCodeChallenge(verifier: string): Promise<string> {
-    const verifierLength = verifier.length;
-    const charCodes = [];
-    for (let i = 0; i < verifierLength; i++) {
-      charCodes.push(verifier.charCodeAt(i));
-    }
-    const ascii = Uint8Array.from(charCodes);
-    const hash = await crypto.subtle.digest('SHA-256', ascii);
-    return encodeBase64url(new Uint8Array(hash));
-  }
-
+  /**
+   * Gets the discovery document of an Authorization Server.
+   * @param baseUrl Base URL of Authorization Server.
+   * @returns Discovery document.
+   */
   public async getDiscoveryDocument(baseUrl: string): Promise<DiscoveryDocument> {
     const discoveryUrl = `${baseUrl}${baseUrl.endsWith('/') ? '' : '/'}.well-known/openid-configuration`;
     return await firstValueFrom(this.http.get<DiscoveryDocument>(discoveryUrl));
   }
 
-  public async sendPar<T extends AuthorizationRequestParameter>(parEndpoint: string, options: T): Promise<ParResponseBody> {
-    try {
-      // Generate x-www-form-urlencoded body from PAR options.
-      const body = new URLSearchParams();
-      const obj: { [id: string]: any } = {...options};
-      for (const key in options) {
-        const value = obj[key];
-        switch (typeof value) {
-          case 'string':
-            body.append(key, value);
-            break;
-          case 'number':
-            body.append(key, value.toString());
-            break;
-          case 'boolean':
-            body.append(key, value ? '1' : '0');
-            break;
-          default:
-            body.append(key, JSON.stringify(value));
-            break;
-        }
-      }
-
-      // Send PAR and return response.
-      return await firstValueFrom(this.http.post<ParResponseBody>(parEndpoint, body));
-    } catch (e) {
-      throw new Error('Failed to send Pushed Authorization Request: ' + e);
-    }
-  }
-
   /**
-   * Starts a pushed authorization request to get an authorization code.
-   * @param authorizationEndpoint Authorization Endpoint of the Authorization Server.
-   * @param options PAR initialization options.
-   * @returns Obtained authorization code.
+   * Performs a Pushed Authorization Request (PAR) and resolves with the obtained authorization code.
+   * @param parEndpoint Pushed Authorization Request (PAR) endpoint.
+   * @param state Authorization Request state id.
+   * @param requestUri Request URI.
+   * @param clientId Client ID.
+   * @param timeout Authorization timeout.
+   * @returns Authorization Code.
    */
-  public async requestPushedAuthorizationCode(authorizationEndpoint: string, options: ParInitializationOptions): Promise<string> {
-    // Generate HTTP query parameters from options.
-    const parameters = new HttpParams()
-    parameters.append('client_id', options.parOptions.client_id);
-    parameters.append('request_uri', options.parOptions.request_uri);
+  public async authorize(parEndpoint: string, state: string, requestUri: string, clientId: string, timeout: number = 600000): Promise<string> {
+    // Build authorization URL.
+    const authorizationUrl = new URL(parEndpoint);
+    authorizationUrl.searchParams.append('client_id', clientId);
+    authorizationUrl.searchParams.append('request_uri', requestUri);
 
     // Generate the key of the local storage variable where the OauthCallbackComponent will write the 
-    const stateKey = OAUTH_AUTH_CODE_KEY_BASE + options.state;
+    const stateKey = OAUTH_AUTH_CODE_KEY_PREFIX + state;
     // Ensure that the state is not yet in use.
-    if (localStorage.getItem(stateKey) !== null) throw new Error('State is already in use!');
+    if (localStorage.getItem(stateKey) !== null) {
+      throw new Error('State is already in use!');
+    }
     // Write an empty string to the local storage to reserve the state.
     localStorage.setItem(stateKey, '');
 
     try {
-      // Open authorization code flow in a new tab.
-      window.open(authorizationEndpoint + '?' + parameters.toString(), '_blank')?.focus();
+      // Open authorization URL in new tab and focus this tab.
+      window.open(authorizationUrl, '_blank')?.focus();
 
-      return await Promise.race([
-        // Timeout promise.
-        new Promise<string>((_, reject) => {
-          setTimeout(() => {
-            reject(new Error('Auth Flow timed out!'));
-          }, options.timeout ?? 600000);
-        }),
-        // Promise which regularly checks for the authorization code in the local storage.
-        new Promise<string>((resolve, reject) => {
-          const interval = setInterval(() => {
-            // Request the authorization code from the local storage.
-            const authCode = localStorage.getItem(stateKey);
+      // Await authorization code from new tab returned via local storage.
+      return await new Promise<string>((resolve, reject) => {
+        const onStorage = (ev: StorageEvent) => {
+          // Ensure that event was raised by local storage.
+          if (ev.storageArea !== window.localStorage) return;
+          // Ensure that event was raised by state key.
+          if (ev.key !== stateKey) return;
+          // Ensure that new value is a valid authorization code.
+          if (!ev.newValue) return;
 
-            if (authCode === null) {
-              // No entry found -> Authorization code was already processed.
-              clearInterval(interval);
-              reject(new Error('Auth Flow expired!'));
-            } else if (authCode !== '') {
-              // Authorization code received -> resolve it.
-              clearInterval(interval);
-              resolve(authCode);
-            } else {
-              // Nothing to do here -> continue.
-            }
-          }, options.refreshInterval ?? 1000);
-        }),
-      ]);
+          // Stop listening to storage storage events and stop timeout.
+          window.removeEventListener('storage', onStorage);
+          window.clearTimeout(timeoutId);
+
+          // Resolve with authorization code.
+          resolve(ev.newValue);
+        };
+        // Start listening to storage events.
+        window.addEventListener('storage', onStorage);
+
+        // Start a timeout.
+        const timeoutId = window.setTimeout(() => {
+          // Stop listening to storage events and clear the timeout.
+          window.removeEventListener('storage', onStorage);
+          window.clearTimeout(timeoutId);
+
+          // Throw an error.
+          reject(new Error('Auth Flow timed out!'));
+        }, timeout);
+      });
     } catch (e) {
-      throw new Error('Failed to obtain Authorization Code: ' + e);
+      // Rethrow the error.
+      throw e;
     } finally {
-      // Unregister from local storage.
+      // Remove the authorization code from local storage.
       localStorage.removeItem(stateKey);
     }
   }
 
   /**
-   * Performs a pushed authorization request (PAR) to obtain an authorization code.
-   * @param baseUrl Base URL of the OpenID Provider (= issuer).
-   * @param options PAR options.
-   * @returns Obtained authorization code.
+   * Handles URL query parameters of Pushed Authorization Request (PAR) response.
    */
-  public async authorize(baseUrl: string, options: ParOptions): Promise<string> {
-    try {
-      // Get discovery document.
-      const discoveryDocument = await this.getDiscoveryDocument(baseUrl);
+  public async handleParResponse(): Promise<void> {
+    // Get HTTP Query parameters.
+    const parameters = await firstValueFrom(this.activatedRoute.queryParams);
 
-      // Get Pushed Authorization Request (PAR) and ensure that it is supported.
-      const parEndpoint = discoveryDocument.pushed_authorization_request_endpoint;
-      if (!parEndpoint) {
-        throw new Error(`RFC 9126 (OAuth 2.0 Pushed Authorization Requests) is not supported by the Authorization Server with Base URL "${baseUrl}"!`);
-      }
+    // Get the state parameter.
+    const stateId = parameters['state'];
 
-      // Generate a random state to identify this authorization request.
-      const state = this.generateRandomString(20);
+    // Generate the ID of the authorization code key in the local storage.
+    const stateKey = OAUTH_AUTH_CODE_KEY_PREFIX + stateId;
+    // Get the stored value for the state.
+    const stateValue = window.localStorage.getItem(stateKey);
 
-      // Generate PKCE parameters.
-      const pkceVerifier = this.generatePkceVerifier();
-      const pkceCodeChallenge = await this.computePkceCodeChallenge(pkceVerifier);
+    // Verify that the state is active.
+    if (stateValue === null) return;
+    // Verify that the state is not yet used.
+    if (stateValue !== '') return;
 
-      // Register Pushed Authorization Request.
-      const response = await this.sendPar<ParRequestBodyWithPkce>(parEndpoint, {
-        response_type: 'code',
-        state: state,
-        client_id: options.clientOptions.client_id,
-        code_challenge: pkceCodeChallenge,
-        code_challenge_method: 'S256',
-        scope: options.scopes?.join(' '),
-      });
+    // Get the authorization code parameter.
+    const authCode = parameters['code'];
+    // Verify that an authorization code was received.
+    if (!authCode) return;
 
-      // Use Request URI from PAR response to initialize the authorization code flow in a new tab.
-      return await this.requestPushedAuthorizationCode(discoveryDocument.authorization_endpoint, {
-        state: state,
-        parOptions: {
-          client_id: options.clientOptions.client_id,
-          request_uri: response.request_uri,
-        },
-      });
-    } catch (e) {
-      throw e;
-    }
+    // Write the state value into the local storage.
+    window.localStorage.setItem(stateKey, authCode);
   }
 }
-
-export interface ParInitializationOptions {
-  state: string;
-  parOptions: PushedAuthorizationRequestParameter;
-  refreshInterval?: number;
-  timeout?: number;
-}
-
-export interface DiscoveryDocument {
-  issuer: string;
-  authorization_endpoint: string;
-  token_endpoint: string;
-  jwks_uri: string;
-  pushed_authorization_request_endpoint?: string;
-}
-
-export interface PkceAuthorizationRequestParameterExtension {
-  code_challenge: string;
-  code_challenge_method: 'plain' | 'S256';
-}
-
-export interface AuthorizationRequestParameter {
-  response_type: 'code' | 'token';
-  client_id: string;
-  redirect_uri?: string;
-  scope?: string;
-  state: string;
-}
-
-export interface PushedAuthorizationRequestParameter {
-  client_id: string;
-  request_uri: string;
-}
-
-export interface RarAuthorizationDetail {
-  type: string;
-  locations?: string[];
-  actions?: string[];
-  datatypes?: string[];
-  identifier?: string;
-  privileges: string[];
-  [key: string]: any;
-}
-
-export interface RarAuthorizationRequestParameterExtension<T extends RarAuthorizationDetail> {
-  authorization_details: T[];
-}
-
-export interface ParRequestBodyBase extends AuthorizationRequestParameter {
-  [key: string]: any;
-}
-
-export interface ParRequestBody extends ParRequestBodyBase, Partial<PkceAuthorizationRequestParameterExtension> { }
-
-export interface ParRequestBodyWithPkce extends ParRequestBodyBase, PkceAuthorizationRequestParameterExtension { }
-
-export interface RarRequestBodyBase<T extends RarAuthorizationDetail> extends AuthorizationRequestParameter, RarAuthorizationRequestParameterExtension<T> { }
-
-export interface RarRequestBody<T extends RarAuthorizationDetail> extends RarRequestBodyBase<T>, Partial<PkceAuthorizationRequestParameterExtension> { }
-
-export interface RarRequestBodyWithPkce<T extends RarAuthorizationDetail> extends RarRequestBodyBase<T>, PkceAuthorizationRequestParameterExtension { }
-
-export interface ParResponseBody {
-  request_uri: string;
-  expires_in: number;
-}
-
-export interface ParOptions {
-  scopes?: string[];
-  authorizationDetails?: RarAuthorizationDetail[];
-  clientOptions: AuthClientOption;
-}
-
-export interface AuthClientOption {
-  client_id: string;
-  client_secret?: string;
-  redirect_uri: string;
-}
-
-export const URL_UNRESERVED_CHARACTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~';
-
-export const OAUTH_REDIRECT_URI_PATH = 'authorization_callback';
-
-export const OAUTH_AUTH_CODE_KEY_BASE = 'oauth_auth_code_'

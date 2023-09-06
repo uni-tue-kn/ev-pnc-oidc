@@ -29,17 +29,19 @@
 ```json
 [
   {
-    "base_url": "https://sso.emsp1.pnc.primbs.dev/",
-    "image": "https://emsp1.pnc.primbs.dev/logo.svg",
-    "name": "OEM eMSP",
-    "client_id": "oem-app"
+    "base_url": "https://authlete.com",
+    "image": "assets/openid_charge.svg",
+    "name": "OpenID Charge",
+    "client_id": "150558547826224",
+    "id": "oidc",
   },
   {
-    "base_url": "https://sso.emsp2.pnc.primbs.dev/",
-    "image": "https://emsp2.pnc.primbs.dev/logo.svg",
-    "name": "Privacy eMSP",
-    "client_id": "oem-app"
-  }
+    "base_url": "http://localhost:8080",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/e/e6/Ionity_logo_cmyk.svg",
+    "name": "Ionity",
+    "client_id": "ionity_ev",
+    "id": "ionity",
+  },
 ]
 ```
 - The EV might have this list cached, directly downloaded from the OEM, or hardcoded in its firmware.

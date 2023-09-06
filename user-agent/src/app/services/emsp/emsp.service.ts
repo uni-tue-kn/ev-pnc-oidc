@@ -8,6 +8,7 @@ import { Ev } from '../../types/ev.class';
   providedIn: 'root',
 })
 export class EmspService {
+
   /**
    * A mapping from an ID to an eMSP with this ID.
    */
@@ -41,36 +42,13 @@ export class EmspService {
   }
 
   /**
-   * Requests an array of available eMSPs from the EV.
-   * @param ev EV to request eMSPs from.
-   * @returns Array of available eMSPs.
-   * @throws {EmspRequestError} if request failed.
-   */
-  private async requestEmsps(ev: Ev): Promise<EMSP[]> {
-    try {
-      // TODO: Perform a real request of available eMSPs from the EV.
-      return [
-        {
-          base_url: 'http://localhost:8080',
-          image: 'https://upload.wikimedia.org/wikipedia/commons/e/e6/Ionity_logo_cmyk.svg',
-          name: 'Ionity',
-          client_id: 'ionity_ev',
-          id: 'ionity',
-        }
-      ];
-    } catch (e) {
-      throw new EmspRequestError(ev, e);
-    }
-  }
-
-  /**
    * Updates the eMSP registry asynchronously.
    * @param ev The EV to request the available eMSPs from.
    * @throws {EmspRequestError} if requesting the eMSPs from the EV failed.
    */
   public async updateEmsps(ev: Ev): Promise<void> {
     // Request the eMSPs from the EV.
-    const emspList = await this.requestEmsps(ev);
+    const emspList = await ev.requestEmsps();
 
     // Clear the current dictionary of eMSPs.
     this.availableEmsps = {};

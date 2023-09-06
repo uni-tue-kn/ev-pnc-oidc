@@ -1,8 +1,6 @@
 import { Component, OnInit } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
-import { firstValueFrom } from 'rxjs';
 
-import { OAUTH_AUTH_CODE_KEY_BASE } from '../../services/auth/auth.service';
+import { AuthService } from '../../services/auth/auth.service';
 
 @Component({
   selector: 'app-oauth-callback',
@@ -12,7 +10,7 @@ import { OAUTH_AUTH_CODE_KEY_BASE } from '../../services/auth/auth.service';
 export class OauthCallbackComponent implements OnInit {
 
   constructor(
-    private readonly activatedRoute: ActivatedRoute,
+    private readonly authService: AuthService,
   ) {}
 
   /**
@@ -31,29 +29,8 @@ export class OauthCallbackComponent implements OnInit {
    * Extracts the received authorization code from HTTP query parameter and stores it to the local storage.
    */
   private async handleQueryParameters(): Promise<void> {
-    // Get HTTP Query parameters.
-    const parameters = await firstValueFrom(this.activatedRoute.queryParams);
-
-    // Get the state parameter.
-    const stateId = parameters['state'];
-
-    // Generate the ID of the authorization code key in the local storage.
-    const stateKey = OAUTH_AUTH_CODE_KEY_BASE + stateId;
-    // Get the stored value for the state.
-    const stateValue = localStorage.getItem(stateKey);
-
-    // Verify that the state is active.
-    if (stateValue === null) return;
-    // Verify that the state is not yet used.
-    if (stateValue !== '') return;
-
-    // Get the authorization code parameter.
-    const authCode = parameters['code'];
-    // Verify that an authorization code was received.
-    if (!authCode) return;
-
-    // Write the state value into the local storage.
-    localStorage.setItem(stateKey, authCode);
+    // Handle PAR response.
+    await this.authService.handleParResponse();
 
     // Update UI.
     this.processed = true;

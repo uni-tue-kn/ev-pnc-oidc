@@ -1,9 +1,9 @@
 <mat-vertical-stepper [linear]="true" #stepper>
   <!-- Connect EV step: -->
   <mat-step [stepControl]="connectEvFormGroup">
-    <form [formGroup]="connectEvFormGroup">
-      <ng-template matStepLabel>Connect EV</ng-template>
+    <ng-template matStepLabel>Connect EV</ng-template>
 
+    <form [formGroup]="connectEvFormGroup">
       <!-- The EV name input field: -->
       <mat-form-field>
         <mat-label>EV name</mat-label>
@@ -33,11 +33,11 @@
     </form>
   </mat-step>
 
-  <!-- Authorize to eMSP step: -->
+  <!-- Select eMSP step: -->
   <mat-step>
-    <form [formGroup]="authorizeEmspFormGroup">
-      <ng-template matStepLabel>Select EMSP</ng-template>
+    <ng-template matStepLabel>Select eMSP</ng-template>
 
+    <form [formGroup]="selectEmspFormGroup">
       <!-- The eMSP selection radio buttons: -->
       <mat-radio-group *ngIf="availableEmsps" formControlName="emspId">
         <mat-radio-button *ngFor="let emsp of availableEmsps" [value]="emsp.id">
@@ -47,30 +47,106 @@
         </mat-radio-button>
       </mat-radio-group>
 
-      <!-- The authorizing progress indicator: -->
-      <div *ngIf="isAuthorizingEmsp">
-        <span>Waiting for authorization ...</span>
-        <mat-progress-bar mode="indeterminate"></mat-progress-bar>
+      <!-- Select eMSP Error: -->
+      <div *ngIf="selectEmspError">
+        <mat-error>{{ selectEmspError }}</mat-error>
       </div>
 
-      <!-- Authorization error: -->
-      <div *ngIf="authorizeEmspError">
-        <mat-error>{{ authorizeEmspError }}</mat-error>
-      </div>
-
-      <!-- The authorize button: -->
+      <!-- The select button: -->
       <div>
         <button mat-raised-button matStepperNext color="primary"
-            [disabled]="!authorizeEmspFormGroup.controls.emspId.value || isAuthorizingEmsp"
-            (click)="authorizeEmsp(authorizeEmspFormGroup.controls.emspId.value!)">
-          Authorize
+            [disabled]="!selectEmspFormGroup.controls.emspId.value"
+            (click)="selectEmsp(selectEmspFormGroup.controls.emspId.value!)">
+          Select
         </button>
       </div>
     </form>
   </mat-step>
 
-  <!-- Final step: -->
+  <!-- Adjust authorization step: -->
   <mat-step>
-    <span>All done!</span>
+    <ng-template matStepLabel>Adjust Authorization</ng-template>
+
+    <form [formGroup]="authorizationOptionsFormGroup">
+      <!-- Authorization Period Date Range Picker: -->
+      <mat-form-field>
+        <mat-label>Authorization Period</mat-label>
+        <mat-date-range-input [formGroup]="authorizationOptionsFormGroup" [rangePicker]="picker">
+          <input matStartDate formControlName="chargingPeriodStart" placeholder="Start date">
+          <input matEndDate formControlName="chargingPeriodEnd" placeholder="End date">
+        </mat-date-range-input>
+        <mat-hint>MM/DD/YYYY – MM/DD/YYYY</mat-hint>
+        <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
+        <mat-date-range-picker #picker></mat-date-range-picker>
+
+        <mat-error *ngIf="authorizationOptionsFormGroup.controls.chargingPeriodStart.hasError('matStartDateInvalid')">Invalid start date</mat-error>
+        <mat-error *ngIf="authorizationOptionsFormGroup.controls.chargingPeriodEnd.hasError('matEndDateInvalid')">Invalid end date</mat-error>
+      </mat-form-field>
+
+      <!-- Total Limit Input: -->
+      <div>
+        <mat-form-field>
+          <mat-label>Total Limit</mat-label>
+          <input type="number" min="0" matInput placeholder="123.45" formControlName="maximumAmount">
+          <mat-icon matSuffix>attach_money</mat-icon>
+          <mat-hint>Total limit within authorization period</mat-hint>
+        </mat-form-field>
+      </div>
+
+      <!-- Transaction Limit Input: -->
+      <div>
+        <mat-form-field>
+          <mat-label>Transaction Limit</mat-label>
+          <input type="number" min="0" matInput placeholder="123.45" formControlName="maximumTransactionAmount">
+          <mat-icon matSuffix>attach_money</mat-icon>
+          <mat-hint>Total limit per transaction</mat-hint>
+        </mat-form-field>
+      </div>
+
+      <!-- The authorize button: -->
+      <div>
+        <button mat-raised-button matStepperNext color="primary"
+            [disabled]="authorizationOptionsFormGroup.invalid || isAuthorizingEmsp || !selectedEmsp"
+            (click)="authorize()">
+          Authorize
+        </button>
+      </div>
+
+    </form>
+  </mat-step>
+
+  <!-- Finish step: -->
+  <mat-step>
+    <ng-template matStepLabel>Finish</ng-template>
+
+    <!-- The authorizing progress indicator: -->
+    <div *ngIf="isAuthorizingEmsp">
+      <span>Authorizing ...</span>
+      <mat-progress-bar mode="indeterminate"></mat-progress-bar>
+    </div>
+
+    <!-- Authorization Error: -->
+    <div *ngIf="authorizationError">
+      <mat-error>{{ authorizationError }}</mat-error>
+    </div>
+
+    <!-- Authorization tab info: -->
+    <div *ngIf="waitForEvAuthorizationRequest">
+      <span>Waiting for Authorization URI from EV ...</span>
+    </div>
+
+    <!-- Authorization tab info: -->
+    <div *ngIf="waitForUserAuthorization">
+      <span>Go to authorization tab and authorize the app.</span>
+    </div>
+
+    <!-- Authorization tab info: -->
+    <div *ngIf="waitForEvAuthorizationResponse">
+      <span>Waiting for authorization response from EV ...</span>
+    </div>
+
+    <div *ngIf="!isAuthorizingEmsp">
+      <span>EV is successfully authorized</span>
+    </div>
   </mat-step>
 </mat-vertical-stepper>
