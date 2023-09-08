@@ -4,6 +4,8 @@ RUN apt-get update && apt-get upgrade -y && apt-get install -y dbus bluez system
 RUN pip3 install --upgrade setuptools
 RUN pip3 install pycairo PyGObject dbus-python git+https://github.com/manylabs/yaglib.git paho-mqtt
 
+COPY ./bluetooth.service /lib/systemd/system/bluetooth.service
+
 # Copy app
 WORKDIR /usr/src/app
 COPY ./entrypoint.sh ./entrypoint.sh

@@ -2,11 +2,13 @@
 
 DEVICE_NAME="MyEV"
 
-# Start dbus service
-systemctl start dbus.service
-systemctl start bluetooth.service
-systemctl start flowbleadv.service
-systemctl start flowble.service
+# Start dbus and bluetooth service
+service dbus start
+service bluetooth start
+
+# # Start Custom services
+# systemctl start flowbleadv.service
+# systemctl start flowble.service
 
 # Configure BLuetooth
 btmgmt -i hci0 power off 
