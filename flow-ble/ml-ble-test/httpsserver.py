@@ -7,12 +7,12 @@
 # then in your browser, visit:
 #    https://localhost:4443
 
-import BaseHTTPServer, SimpleHTTPServer
+from http.server import SimpleHTTPRequestHandler,HTTPServer
 import ssl
 
 port = 4443
 #httpd = BaseHTTPServer.HTTPServer(('0.0.0.0', port), SimpleHTTPServer.SimpleHTTPRequestHandler)
-httpd = BaseHTTPServer.HTTPServer(('localhost', 4443), SimpleHTTPServer.SimpleHTTPRequestHandler)
+httpd = HTTPServer(('localhost', 4443), SimpleHTTPRequestHandler)
 httpd.socket = ssl.wrap_socket (httpd.socket, certfile='./server.pem', server_side=True)
 print("Listening at %s" % "https://localhost:%d" % port)
 httpd.serve_forever()

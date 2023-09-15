@@ -40,10 +40,10 @@ body {
 
 #responseText {
   position: absolute;
-  bottom: 5px;
   left: 0;
   right: 0;
   margin: 5 auto;
+  margin-top: 50px;
   font-size: 14px;
   height: 70%;
   width: 99%;

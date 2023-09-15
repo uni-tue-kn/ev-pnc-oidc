@@ -52,15 +52,26 @@ function handleHttpStatus(httpStatus) {
     var ts = new Date();
     var dt_prefix = ts.toLocaleTimeString('en-US', options) + ": ";
     statusText.innerHTML = dt_prefix + "<br/>HTTP Status=" + http_status;
-    if (http_status == manylabsBle.STATUS_BIT_BODY_RECEIVED) {
+    if (http_status == manylabsBle.STATUS_BIT_BODY_RECEIVED)  {
       // retrieve http body
-      console.log("handleHttpStatus.event: Retrieving body...");
+      console.log("handleHttpStatus.event: Retrieving body......");
       manylabsBle.getHttpBody().then(body => {
-        console.log("getHttpBody.body: " + body);
+        console.log("getHttpBody.body 1: " + body);
         responseText.innerHTML += "<br/>";
         //responseText.innerHTML += ts.toLocaleTimeString('en-US', options) + "." + (ts.getTime() % 999) + ": " + body;
         responseText.innerHTML += dt_prefix + body;
      });
+
+    } else if (http_status == manylabsBle.STATUS_BIT_BODY_TRUNCATED)  {
+      // retrieve http body
+      console.log("handleHttpStatus.event2: Retrieving body......");
+        manylabsBle.getHttpBody().then(body => {
+          console.log("getHttpBody.body 2: " + body);
+          responseText.innerHTML += "<br/>";
+          //responseText.innerHTML += ts.toLocaleTimeString('en-US', options) + "." + (ts.getTime() % 999) + ": " + body;
+          responseText.innerHTML += dt_prefix + body;
+          return body.length
+        });
 
     } else {
       console.log("handleHttpStatus.event: Body not received: http_status=" + http_status);

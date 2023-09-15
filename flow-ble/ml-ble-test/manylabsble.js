@@ -83,6 +83,7 @@ CONTROL_POINT_MAP = {
   //  which will notify about new response periodically and continuously 
   //  after the first request.
   var uri = "wss://localhost/api/v1/websocket"
+  var uri = "https://www.google.com"
 
   // set to false to minimize console.log printing
   var verbose = true;
