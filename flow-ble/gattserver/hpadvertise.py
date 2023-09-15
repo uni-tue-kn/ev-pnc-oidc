@@ -16,7 +16,7 @@ from yaglib import AdvertisementManager, Advertisement
 class HpAdvertisement(Advertisement):
 
     def __init__(self, ctx, index):
-        Advertisement.__init__(self, ctx, index, 'peripheral')
+        Advertisement.__init__(self, ctx, index, 'peripheral') #'broadcast', 'peripheral'
 
         # heart rate
         #self.add_service_uuid('180D')

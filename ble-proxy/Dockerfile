@@ -1,8 +1,8 @@
 FROM python:3.11
 
-RUN apt-get update && apt-get upgrade -y && apt-get install -y dbus bluez systemctl python3-gi python3-docutils libdbus-1-dev libudev-dev libical-dev libreadline-dev libcairo2-dev libxt-dev libgirepository1.0-dev mosquitto mosquitto-clients
+RUN apt-get update && apt-get upgrade -y && apt-get install -y dbus bluez systemctl python3-gi python3-docutils libdbus-1-dev libudev-dev libical-dev libreadline-dev libcairo2-dev libxt-dev libgirepository1.0-dev mosquitto mosquitto-clients cmake
 RUN pip3 install --upgrade setuptools
-RUN pip3 install pycairo PyGObject dbus-python git+https://github.com/manylabs/yaglib.git paho-mqtt
+RUN pip3 install pycairo PyGObject dbus-python git+https://github.com/manylabs/yaglib.git paho-mqtt requests
 
 COPY ./bluetooth.service /lib/systemd/system/bluetooth.service
 
