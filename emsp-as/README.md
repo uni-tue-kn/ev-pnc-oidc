@@ -1,80 +1,32 @@
-Authorization Server Implementation in Go
-=========================================
+# Authorization Server
 
-Overview
---------
+OAuth 2 Authorization Server implementation of the eMSP.
 
-This is an authorization server implementation in Go which supports
-[OAuth 2.0][RFC6749] and [OpenID Connect][OIDC].
+This project was cloned from [here](https://github.com/authlete/gin-oauth-server).
 
-This implementation is written using Gin API and authlete-go-gin library.
-[Gin][Gin] is a web framework written in Go. On the other hand,
-[authlete-go-gin][AuthleteGoGin] is an Authlete's open source library which
-provides utility components for developers to implement an authorization
-server and a resource server. authlete-go-gin in turn uses
-[authlete-go][AuthleteGo] library which is another open source library to
-communicate with [Authlete Web APIs][AuthleteAPI].
+**This is no security-focused project. DO NOT USE THIS IN PRODUCTION!**
 
-Access tokens issued by this authorization server can be used at a resource
-server which uses Authlete as a backend service.
-[gin-resource-server][GinResourceServer] is such a resource server
-implementation. It supports a [userinfo endpoint][UserInfoEndpoint] defined
-in [OpenID Connect Core 1.0][OIDCCore] and includes an example implementation
-of a protected resource endpoint, too.
 
-License
--------
+## Setup
 
-  Apache License, Version 2.0
+1. Rename the [`authlete.template.toml`](./authlete.template.toml) to `authlete.toml` and update the `ServiceApiKey` and `ServiceApiSecret` parameters with the API Key and API Secret from your Authlete service.
+2. Run `make` to build the Authorization Server to the `gin-oauth-server` file.
+3. Run `make run` to start the authorization server on `http://localhost:8080`.
 
-Source Code
------------
 
-  <code>https://github.com/authlete/gin-oauth-server</code>
+## Docker
 
-About Authlete
---------------
+You can also build and start the Authorization Server using the provided [`Dockerfile`](./Dockerfile).
 
-[Authlete][Authlete] is a cloud service that provides an implementation of
-OAuth 2.0 & OpenID Connect ([overview][AuthleteOverview]). You can easily get
-the functionalities of OAuth 2.0 and OpenID Connect either by using the default
-implementation provided by Authlete or by implementing your own authorization
-server using [Authlete Web APIs][AuthleteAPI] as this implementation
-(gin-oauth-server) does.
 
-To use this authorization server implementation, you need to get API credentials
-from Authlete and set them in `authlete.toml`. The steps to get API credentials
-are very easy. All you have to do is just to register your account
-([sign up][AuthleteSignUp]). See [Getting Started][AuthleteGettingStarted] for
-details.
+### Configuration
 
-How To Run
-----------
+**`PORT`**
+  Default: `8080`
+  The port to listen to.
 
-1. Install authlete-go and authlete-go-gin libraries.
 
-        $ go get github.com/authlete/authlete-go
-        $ go get github.com/authlete/authlete-go-gin
-
-2. Download the source code of this authorization server implementation.
-
-        $ git clone https://github.com/authlete/gin-oauth-server.git
-        $ cd gin-oauth-server
-
-3. Edit the configuration file to set the API credentials of yours.
-
-        $ vi authlete.toml
-
-4. Build the authorization server.
-
-        $ make
-
-5. Start the authorization server on `http://localhost:8080`.
-
-        $ make run
-
-Endpoints
----------
+## Endpoints
 
 This implementation exposes endpoints as listed in the table below.
 
@@ -105,8 +57,8 @@ tokens. Its behavior is defined in [RFC 7009][RFC7009].
 The introspection endpoint is a Web API to get information about access
 tokens and refresh tokens. Its behavior is defined in [RFC 7662][RFC7662].
 
-Authorization Request Example
------------------------------
+
+## Authorization Request Example
 
 The following is an example to get an access token from the authorization
 endpoint using [Implicit Flow][ImplicitFlow]. Don't forget to replace
@@ -126,51 +78,3 @@ following two accounts. Use either of them.
 |:---------|:---------|
 | `john`   | `john`   |
 | `jane`   | `jane`   |
-
-Note
-----
-
-- CSRF protection is not implemented.
-
-See Also
---------
-
-- [Authlete][Authlete] - Authlete Home Page
-- [authlete-go][AuthleteGo] - Authlete Library for Go
-- [authlete-go-gin][AuthleteGoGin] - Authlete Library for Gin (Go)
-- [gin-resource-server][GinResourceServer] - Resource Server Implementation
-
-Contact
--------
-
-Contact Form : https://www.authlete.com/contact/
-
-| Purpose   | Email Address        |
-|:----------|:---------------------|
-| General   | info@authlete.com    |
-| Sales     | sales@authlete.com   |
-| PR        | pr@authlete.com      |
-| Technical | support@authlete.com |
-
-[Authlete]:               https://www.authlete.com/
-[AuthleteAPI]:            https://docs.authlete.com/
-[AuthleteGettingStarted]: https://www.authlete.com/developers/getting_started/
-[AuthleteOverview]:       https://www.authlete.com/developers/overview/
-[AuthleteGo]:             https://github.com/authlete/authlete-go/
-[AuthleteGoGin]:          https://github.com/authlete/authlete-go-gin/
-[AuthleteSignUp]:         https://so.authlete.com/accounts/signup
-[DeveloperConsole]:       https://www.authlete.com/developers/cd_console/
-[Gin]:                    https://github.com/gin-gonic/gin
-[GinOAuthServer]:         https://github.com/authlete/gin-oauth-server/
-[GinResourceServer]:      https://github.com/authlete/gin-resource-server/
-[ImplicitFlow]:           https://tools.ietf.org/html/rfc6749#section-4.2
-[MultiResponseType]:      https://openid.net/specs/oauth-v2-multiple-response-types-1_0.html
-[OIDC]:                   https://openid.net/connect/
-[OIDCCore]:               https://openid.net/specs/openid-connect-core-1_0.html
-[OIDCDiscovery]:          https://openid.net/specs/openid-connect-discovery-1_0.html
-[PKCE]:                   https://www.authlete.com/developers/pkce/
-[RFC6749]:                https://tools.ietf.org/html/rfc6749
-[RFC7009]:                https://tools.ietf.org/html/rfc7009
-[RFC7636]:                https://tools.ietf.org/html/rfc7636
-[RFC7662]:                https://tools.ietf.org/html/rfc7662
-[UserInfoEndpoint]:       https://openid.net/specs/openid-connect-core-1_0.html#UserInfo
