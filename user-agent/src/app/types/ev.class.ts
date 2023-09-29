@@ -1,10 +1,9 @@
 import { HttpHeaders, HttpResponse } from '@angular/common/http';
 
 import { EMSP } from './emsp.interface';
-import { IEvAuthorizationOptions } from './ev-authorization-options.interface';
+import { IEvAuthorizationDetail } from './ev-authorization-detail.interface';
 import { EvAuthorizationResponse } from './ev-authorization-response.interface';
 import { BluetoothHttpProxyService } from './bluetooth-http-proxy-service';
-import { EmspRequestError } from '../errors/emsp-request-error.error';
 
 /**
  * URL used to initialize a Pushed Authorization Request.
@@ -79,16 +78,16 @@ export class Ev {
   /**
    * Requests the Authorization URI for the Pushed Authorization Request from the EV.
    * @param emsp eMSP to request a connection with.
-   * @param options Authorization options.
+   * @param details Authorization details.
    * @returns Authorization Initialization Response from EV.
    */
-  async requestAuthorizationUri(emsp: EMSP, options: IEvAuthorizationOptions): Promise<EvAuthorizationResponse> {
+  async requestAuthorizationUri(emsp: EMSP, details: IEvAuthorizationDetail[]): Promise<EvAuthorizationResponse> {
     try {
       // Send POST request.
       const response = await this.post<EvAuthorizationResponse>(
         AUTHORIZATION_INITIALIZATION_URL, {
         emsp_id: emsp.id,
-        authorization: options,
+        details: details,
       });
 
       // Get body and verify its existance.

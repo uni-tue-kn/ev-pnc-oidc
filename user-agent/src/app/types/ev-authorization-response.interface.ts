@@ -2,7 +2,7 @@ export interface EvAuthorizationResponse {
   /**
    * Request URI.
    */
-  requestUri: string;
+  request_uri: string;
 
   /**
    * State.

@@ -1,6 +1,5 @@
 import { Injectable } from '@angular/core';
 
-import { EmspRequestError } from '../../errors/emsp-request-error.error';
 import { EMSP } from '../../types/emsp.interface';
 import { Ev } from '../../types/ev.class';
 

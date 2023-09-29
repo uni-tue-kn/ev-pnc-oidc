@@ -8,7 +8,7 @@ import { EvService } from '../../services/ev/ev.service';
 import { CurrencyAmount } from '../../types/currency-amount.class';
 import { EMSP } from '../../types/emsp.interface';
 import { Ev } from '../../types/ev.class';
-import { EvAuthorizationOptions } from '../../types/ev-authorization-options.class';
+import { EvAuthorizationDetail } from '../../types/ev-authorization-detail.class';
 
 @Component({
   selector: 'app-connect',
@@ -232,15 +232,20 @@ export class ConnectComponent implements OnInit {
    * Parses the authorization options from the form.
    * @returns Parsed authorization options.
    */
-  private getAuthorizationOptions(): EvAuthorizationOptions {
-    return new EvAuthorizationOptions(
-      {
-        start: this.authorizationOptionsFormGroup.controls.chargingPeriodStart.value!,
-        end: this.authorizationOptionsFormGroup.controls.chargingPeriodEnd.value!,
-      },
-      new CurrencyAmount(this.authorizationOptionsFormGroup.controls.maximumAmount.value!, 'USD'),
-      new CurrencyAmount(this.authorizationOptionsFormGroup.controls.maximumTransactionAmount.value!, 'USD'),
-    );
+  private getAuthorizationDetails(): EvAuthorizationDetail[] {
+    return [
+      new EvAuthorizationDetail(
+        ['contract_provisioning'],
+        // TODO: Update Resource Server:
+        ['https://rs.example.com'],
+        {
+          start: this.authorizationOptionsFormGroup.controls.chargingPeriodStart.value!,
+          end: this.authorizationOptionsFormGroup.controls.chargingPeriodEnd.value!,
+        },
+        new CurrencyAmount(this.authorizationOptionsFormGroup.controls.maximumAmount.value!, 'USD'),
+        new CurrencyAmount(this.authorizationOptionsFormGroup.controls.maximumTransactionAmount.value!, 'USD'),
+      ),
+    ];
   }
 
   /**
@@ -269,12 +274,12 @@ export class ConnectComponent implements OnInit {
       }
 
       // Generate Authorization Options.
-      const authorizationOptions = this.getAuthorizationOptions();
+      const authorizationOptions = this.getAuthorizationDetails();
       this.waitForEvAuthorizationRequest = true;
       // Request Authorization URI form EV.
       const authorizationResponse = await this.connectedEv.requestAuthorizationUri(
         this.selectedEmsp,
-        authorizationOptions.toJson(),
+        authorizationOptions.map((option) => option.toJson()),
       );
       this.waitForEvAuthorizationRequest = false;
 
@@ -289,7 +294,7 @@ export class ConnectComponent implements OnInit {
       const authorizationCode = await this.authService.authorize(
         parEndpoint,
         authorizationResponse.state,
-        authorizationResponse.requestUri,
+        authorizationResponse.request_uri,
         this.selectedEmsp.client_id,
       );
       this.waitForUserAuthorization = false;
