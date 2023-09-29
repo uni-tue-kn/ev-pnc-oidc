@@ -1,0 +1,203 @@
+openapi: 3.0.3
+info:
+  title: EV Backend
+  version: 0.0.1
+servers:
+- url: http://localhost:8080
+- url: http://ev.localhost
+paths:
+  /emsps:
+    get:
+      tags:
+      - Discovery
+      summary: Gets supported eMSPs
+      description: Returns an array of supported eMSP infos.
+      operationId: getEmsps
+      responses:
+        "200":
+          description: List of eMSPs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Emsp'
+                x-content-type: application/json
+        "500":
+          description: Internal server error
+  /initialize:
+    post:
+      tags:
+      - Authorization
+      summary: Initializes authorization flow
+      description: Transfers the desired eMSP and the parameters to authorize.
+      operationId: initializeAuthorizationFlow
+      requestBody:
+        $ref: '#/components/requestBodies/AuthorizationRequest'
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthorizationResponse'
+        "400":
+          description: Bad request
+        "404":
+          description: eMSP ID not found
+        "500":
+          description: Internal server error
+  /authorize:
+    post:
+      tags:
+      - Authorization
+      summary: Finishes the authorization
+      description: Transfers the Authorization Code to the EV which finishes the authorization
+        process.
+      operationId: finishAuthorizationFlow
+      requestBody:
+        $ref: '#/components/requestBodies/FinishAuthorizationRequest'
+      responses:
+        "200":
+          description: OK
+        "401":
+          description: Unknown state
+        "500":
+          description: Internal server error
+components:
+  schemas:
+    Emsp:
+      required:
+      - base_url
+      - client_id
+      - id
+      - name
+      type: object
+      properties:
+        id:
+          $ref: '#/components/schemas/EmspId'
+        name:
+          type: string
+          example: Ionity
+        base_url:
+          type: string
+          format: uri
+          example: https://login.ionity.eu/
+        client_id:
+          type: string
+          example: ev_client
+        image:
+          type: string
+          format: uri
+          example: https://upload.wikimedia.org/wikipedia/commons/e/e6/Ionity_logo_cmyk.svg
+      example:
+        image: https://upload.wikimedia.org/wikipedia/commons/e/e6/Ionity_logo_cmyk.svg
+        name: Ionity
+        base_url: https://login.ionity.eu/
+        id: ionity
+        client_id: ev_client
+    EmspId:
+      type: string
+      example: ionity
+    AuthorizationRequest:
+      type: object
+      properties:
+        emsp_id:
+          $ref: '#/components/schemas/EmspId'
+        detail:
+          $ref: '#/components/schemas/AuthorizationDetail'
+    AuthorizationDetail:
+      type: object
+      properties:
+        type:
+          type: string
+          example: "pnc_contract_request"
+        actions:
+          type: array
+          items:
+            type: string
+            example: "contract_provisioning"
+        locations:
+          type: array
+          items:
+            type: string
+            format: uri
+            example: "https://rs.example.com"
+        chargingPeriod:
+          $ref: '#/components/schemas/ChargingPeriod'
+        maximumAmount:
+          $ref: '#/components/schemas/CurrencyAmount'
+        maximumTransactionAmount:
+          $ref: '#/components/schemas/CurrencyAmount'
+    CurrencyAmount:
+      required:
+      - amount
+      - currency
+      type: object
+      properties:
+        amount:
+          type: string
+          format: decimal
+          example: "123.50"
+        currency:
+          type: string
+          example: EUR
+          enum:
+          - EUR
+          - USD
+    AuthorizationResponse:
+      required:
+      - request_uri
+      - state
+      type: object
+      properties:
+        request_uri:
+          $ref: '#/components/schemas/RequestUri'
+        state:
+          $ref: '#/components/schemas/State'
+      example:
+        state: OacnSace5b
+        request_uri: urn:example:bwc4JK-ESC0w8acc191e-Y1LTC2
+    RequestUri:
+      type: string
+      format: uri
+      example: urn:example:bwc4JK-ESC0w8acc191e-Y1LTC2
+    State:
+      type: string
+      example: OacnSace5b
+    FinishAuthorizationRequest:
+      required:
+      - auth_code
+      - state
+      type: object
+      properties:
+        auth_code:
+          type: string
+          example: LRS7CLedws
+        state:
+          $ref: '#/components/schemas/State'
+    ChargingPeriod:
+      required:
+      - end
+      - start
+      type: object
+      properties:
+        start:
+          type: string
+          format: date-time
+          example: 2023-09-07T14:00:00Z
+        end:
+          type: string
+          format: date-time
+          example: 2023-10-07T15:00:00Z
+  requestBodies:
+    AuthorizationRequest:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/AuthorizationRequest'
+    FinishAuthorizationRequest:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/FinishAuthorizationRequest'
