@@ -1,3 +1,0 @@
-BaseUrl = "https://api.authlete.com"
-ServiceApiKey = "YOUR_SERVICE_API_KEY"
-ServiceApiSecret = "YOUR_SERVICE_API_SECRET"

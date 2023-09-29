@@ -1,0 +1,85 @@
+services:
+  http-proxy:
+    image: traefik:2.10
+    ports:
+      - 80:80/tcp
+      # - 443:443/tcp
+    command:
+      - --accesslog=true
+      - --entrypoints.web.address=:80
+      - --providers.docker=true
+      - --providers.docker.endpoint=unix:///var/run/docker.sock
+      - --providers.docker.exposedbydefault=false
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+
+  # op-discovery:
+  #   build:
+  #     context: ./discovery
+  #     dockerfile: Dockerfile
+  #   depends_on:
+  #     - http-proxy
+  #   labels:
+  #     - "traefik.enable=true"
+  #     - "traefik.http.routers.op-discovery.entrypoints=web"
+  #     - "traefik.http.routers.op-discovery.rule=Host(`op.localhost`) && Path(`/.well-known/openid-configuration`)"
+  #     - "traefik.http.routers.op-discovery.middlewares=op-discovery@docker"
+  #     - "traefik.http.middlewares.op-discovery.replacepathregex.regex=^/.well-known/openid-configuration(.*)"
+  #     - "traefik.http.middlewares.op-discovery.replacepathregex.replacement=$$1"
+
+  emsp-backend:
+    build:
+      context: ./emsp-backend
+      dockerfile: Dockerfile
+    depends_on:
+      - http-proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.emsp-backend.entrypoints=web"
+      - "traefik.http.routers.emsp-backend.rule=Host(`emsp.localhost`)"
+
+  emsp-as:
+    build:
+      context: ./emsp-authorizationserver
+      dockerfile: Dockerfile
+    depends_on:
+      - http-proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.emsp-as.entrypoints=web"
+      - "traefik.http.routers.emsp-as.rule=Host(`as.localhost`)"
+    volumes:
+      - ./emsp-authorizationserver/.:/authlete/app
+
+  ev-backend:
+    build:
+      context: ./ev-backend
+      dockerfile: Dockerfile
+    depends_on:
+      - http-proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.ev-backend.entrypoints=web"
+      - "traefik.http.routers.ev-backend.rule=Host(`ev.localhost`)"
+    environment:
+      - CSR_ENDPOINT=http://emsp-backend
+      - OUTPUT_FILE=/output/cc.cer
+      - API_KEY=${API_KEY}
+      - API_SECRET=${API_SECRET}
+    volumes:
+      - cc_output:/output
+      - ./ev-backend/config:/app/config
+
+  user-agent:
+    build:
+      context: ./user-agent
+      dockerfile: Dockerfile
+    depends_on:
+      - http-proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.user-agent.entrypoints=web"
+      - "traefik.http.routers.user-agent.rule=Host(`ua.localhost`)"
+
+volumes:
+  cc_output:
