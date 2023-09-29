@@ -3,15 +3,26 @@ services:
     image: traefik:2.10
     ports:
       - 80:80/tcp
-      # - 443:443/tcp
+      - 443:443/tcp
+    environment:
+      INWX_USERNAME_FILE: /run/secrets/inwx_username
+      INWX_PASSWORD_FILE: /run/secrets/inwx_password
+      INWX_SHARED_SECRET_FILE: /run/secrets/inwx_secret
     command:
       - --accesslog=true
       - --entrypoints.web.address=:80
+      - --entrypoints.websecure.http.tls=true
+      - --entrypoints.websecure.http.tls.certresolver=letsencrypt
+      - --certificatesresolvers.letsencrypt.acme.email=jonas@primbs.is.it
+      - --certificatesresolvers.letsencrypt.acme.storage=/etc/traefik/acme/acme.json
+      - --certificatesresolvers.letsencrypt.acme.dnschallenge.provider=inwx
+      - --certificatesresolvers.letsencrypt.acme.dnschallenge.resolvers=1.1.1.1:53,8.8.8.8:53
       - --providers.docker=true
       - --providers.docker.endpoint=unix:///var/run/docker.sock
       - --providers.docker.exposedbydefault=false
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
+      - .secrets/acme:/etc/traefik/acme
 
   # op-discovery:
   #   build:
@@ -34,9 +45,11 @@ services:
     depends_on:
       - http-proxy
     labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.emsp-backend.entrypoints=web"
-      - "traefik.http.routers.emsp-backend.rule=Host(`emsp.localhost`)"
+      - traefik.enable=true
+      - traefik.http.routers.emsp-backend.entrypoints=web,websecure
+      - traefik.http.routers.emsp-backend.rule=Host(`emsp.oidcharge.primbs.dev`)
+      - traefik.http.routers.emsp-backend.tls=true
+      - traefik.http.routers.emsp-backend.tls.certresolver=letsencrypt
 
   emsp-as:
     build:
@@ -45,9 +58,11 @@ services:
     depends_on:
       - http-proxy
     labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.emsp-as.entrypoints=web"
-      - "traefik.http.routers.emsp-as.rule=Host(`as.localhost`)"
+      - traefik.enable=true
+      - traefik.http.routers.emsp-as.entrypoints=web,websecure
+      - traefik.http.routers.emsp-as.rule=Host(`as.oidcharge.primbs.dev`)
+      - traefik.http.routers.emsp-as.tls=true
+      - traefik.http.routers.emsp-as.tls.certresolver=letsencrypt
     volumes:
       - ./emsp-authorizationserver/.:/authlete/app
 
@@ -58,9 +73,9 @@ services:
     depends_on:
       - http-proxy
     labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.ev-backend.entrypoints=web"
-      - "traefik.http.routers.ev-backend.rule=Host(`ev.localhost`)"
+      - traefik.enable=true
+      - traefik.http.routers.ev-backend.entrypoints=web
+      - traefik.http.routers.ev-backend.rule=Host(`ev.localhost`)
     environment:
       - CSR_ENDPOINT=http://emsp-backend
       - OUTPUT_FILE=/output/cc.cer
@@ -77,9 +92,19 @@ services:
     depends_on:
       - http-proxy
     labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.user-agent.entrypoints=web"
-      - "traefik.http.routers.user-agent.rule=Host(`ua.localhost`)"
+      - traefik.enable=true
+      - traefik.http.routers.user-agent.entrypoints=web,websecure
+      - traefik.http.routers.user-agent.rule=Host(`ua.oidcharge.primbs.dev`)
+      - traefik.http.routers.user-agent.tls=true
+      - traefik.http.routers.user-agent.tls.certresolver=letsencrypt
 
 volumes:
   cc_output:
+
+secrets:
+  inwx_username:
+    file: .secrets/inwx_username.txt
+  inwx_password:
+    file: .secrets/inwx_password.txt
+  inwx_secret:
+    file: .secrets/inwx_secret.txt
