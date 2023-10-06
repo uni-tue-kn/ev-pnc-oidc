@@ -1,3 +1,6 @@
 go.sum
 server
+ca/
+csr/
+crt/
 !.env

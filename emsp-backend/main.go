@@ -14,7 +14,7 @@ import (
 )
 
 func main() {
-	log.Printf("eMSP Backend is starting...")
+	log.Printf("Starting server...")
 
 	// Load Configuration
 	err := emsp_backend.LoadConfiguration()

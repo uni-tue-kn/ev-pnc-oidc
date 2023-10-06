@@ -69,7 +69,7 @@ services:
       PORT: 8080
       TRUSTED_ISSUER: https://as.oidcharge.primbs.dev
       TRUSTED_AUDIENCE: emsp_backend
-      JWKS_URI: http://api.authlete.com/api/service/jwks/get/direct/174842823221896
+      JWKS_URI: http://as:8080/api/jwks
       REQUIRED_SCOPES: csr
       CSR_DIR: ./csr
       CRT_DIR: ./crt
@@ -83,6 +83,7 @@ services:
       - traefik.http.routers.emsp-backend.tls=true
       - traefik.http.routers.emsp-backend.tls.certresolver=letsencrypt
     volumes:
+      - .secrets/ca:/app/ca
       - .secrets/csr:/app/csr
       - .secrets/crt:/app/crt
 

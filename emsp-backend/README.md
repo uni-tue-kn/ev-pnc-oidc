@@ -76,7 +76,7 @@ Docker commands:
 
 ```bash
 # Build the container as "emsp-backend:latest" image
-docker build --pull --rm -f "Dockerfile" -t emsp-backend:latest "./"
+docker build --pull --rm -f ./Dockerfile -t emsp-backend:latest "./"
 
 # Run the built container. Server will be available on http://localhost:8080
 docker run -p "8080:8080" emsp-backend:latest

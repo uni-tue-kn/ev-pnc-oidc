@@ -1,9 +1,12 @@
 # Build container
 FROM golang:1.21 AS build
 
+# Update packages
+RUN apt update && apt upgrade -y
+
 # Copy source files
 WORKDIR /go/src
-COPY go ./go
+COPY go/ ./go
 COPY main.go .
 COPY go.mod .
 
@@ -21,12 +24,13 @@ RUN go build -a -installsuffix cgo -o server .
 FROM alpine AS runtime
 
 # Update packages and install openssl
-RUN apk upgrade --update-cache --available && apk add openssl && apk add ca-certificates
+RUN apk upgrade --update-cache --available && apk add openssl
 
-# Create app directory and copy required executables
+# Create app directory and copy required executable and config files
 WORKDIR /app
-COPY --from=build /go/src/server ./
-COPY ./sign-cert.sh ./
+COPY --from=build /go/src/server .
+COPY ./config/ ./config
+COPY ./scripts/ ./scripts
 
 # Set default environment variables
 ENV PORT=8080
@@ -42,4 +46,4 @@ ENV SIGNING_ARGS="${CSR_FILE} ${CRT_FILE}"
 EXPOSE ${PORT}/tcp
 
 # Run server
-ENTRYPOINT ["./server"]
+ENTRYPOINT ["./scripts/entrypoint.sh"]

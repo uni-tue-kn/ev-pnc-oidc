@@ -131,7 +131,7 @@ func SignCsr(csrPath string, crtPath string) error {
 	var signingArgs []string
 
 	for i := 0; i < len(Configuration.SigningArgs); i++ {
-		arg := signingArgs[i]
+		arg := Configuration.SigningArgs[i]
 		arg = strings.ReplaceAll(arg, "${CSR_FILE}", csrPath)
 		arg = strings.ReplaceAll(arg, "${CRT_FILE}", crtPath)
 		signingArgs = append(signingArgs, arg)
