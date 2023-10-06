@@ -9,6 +9,7 @@ package main
 import (
 	"log"
 	"net/http"
+	"os"
 
 	ev_backend "ev_backend/go"
 )
@@ -26,5 +27,11 @@ func main() {
 
 	router := ev_backend.NewRouter()
 
-	log.Fatal(http.ListenAndServe(":8080", router))
+	// Get port from environment.
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+
+	log.Fatal(http.ListenAndServe(":"+port, router))
 }

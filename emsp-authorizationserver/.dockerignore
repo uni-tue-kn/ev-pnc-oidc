@@ -1,0 +1,5 @@
+target/
+authlete.template.properties
+authlete.properties
+README.md
+LICENSE

@@ -1,0 +1,95 @@
+openapi: 3.0.3
+info:
+  title: eMSP Backend
+  version: 0.0.1
+servers:
+- url: http://localhost:8080
+- url: https://emsp.oidcharge.primbs.dev
+paths:
+  /csr:
+    post:
+      tags:
+      - Certificate Signing Request
+      summary: Posts a Certificate Signing Request
+      description: Returns a signed X.509 Certificate
+      operationId: postCsr
+      requestBody:
+        content:
+          application/pkcs10:
+            schema:
+              type: string
+              example: |
+                -----BEGIN CERTIFICATE REQUEST-----
+                MIICtDCCAZwCAQAwPzELMAkGA1UEBhMCREUxEzARBgNVBAoMCkNhckNvbXBhbnkx
+                GzAZBgNVBAMMEkRFLThBQS0xQTJCM0M0RDUtOTCCASIwDQYJKoZIhvcNAQEBBQAD
+                ggEPADCCAQoCggEBAK7IGxfAXO12QiCokgtWYcUF+t9lZeMBt6S1MfQG+5DF2kWa
+                pZDOeswt3Q4T2VDf87ae9+Umz+KMr8biyXGNStrQmtrqI2hRSmRjrI3U4QfcUn0I
+                9eKeOODq7QWcBeFodbL9Jc4RCCLVf91oU2u+mm4E6V0N3d1JPwqmvD8tG2z5AGZa
+                HiWiELJ6OVum21ZSbKNK6iwHqGITtg8Q9cngGkoD+6Tsdw5bDcrIUOq3LZ1UI0uF
+                yDJrfwbG4MgsLYKUznLT+uojRQa7qFhDvMjqAOs58cCpr6Nx6lV5G6+LeltZkLPo
+                fMTwuZr9YH4ZwmKJy2Wn+VApsj9JbT16eU0JY7MCAwEAAaAwMC4GCSqGSIb3DQEJ
+                DjEhMB8wHQYDVR0RBBYwFIISREUtOEFBLTFBMkIzQzRENS05MA0GCSqGSIb3DQEB
+                CwUAA4IBAQBTdjaSw+OYKgfQhN2O1Pl44FRB9FoUrtx0iABlP3L1p/YOhc/n74YS
+                E4E4Ttnq9GW/d4XMUiQqQ1bHZt9InpuXG1rVhDruZSE1ocKRzRnqlLoFEAjYAoMl
+                nmPnB6PrmcggfwBO8yRmEaYSZ3gF+AdwIEWTxeTpFoY6305/1+sFs4fLbezeZjXI
+                hkuv59/AVSDKffxOg0Ozz2IJ7NuUoPgV5LsUyurbDY8DHtA55mzodRJG2jOQMwxJ
+                6hB7fI6TXq+v2wRtW6afydBZUtHiWTs/pD880mfXrrqfzGctr5Rr410ZHwLXsLdj
+                TH9L7kTYjrkdvdDzPTYH8Mma9pWfyUE7
+                -----END CERTIFICATE REQUEST-----
+      responses:
+        "201":
+          description: Created
+          content:
+            application/x-x509-user-cert:
+              schema:
+                type: string
+                example: |
+                  -----BEGIN CERTIFICATE-----
+                  MIIEGTCCAgECAQEwDQYJKoZIhvcNAQELBQAwZjELMAkGA1UEBhMCREUxCzAJBgNV
+                  BAgMAkJXMRIwEAYDVQQHDAlTdHV0dGdhcnQxEjAQBgNVBAoMCU9JRENoYXJnZTEi
+                  MCAGA1UEAwwZZW1zcC5vaWRjaGFyZ2UucHJpbWJzLmRldjAeFw0yMzEwMDUxMjM3
+                  NDJaFw0yNDAxMDMxMjM3NDJaMD8xCzAJBgNVBAYTAkRFMRMwEQYDVQQKDApDYXJD
+                  b21wYW55MRswGQYDVQQDDBJERS04QUEtMUEyQjNDNEQ1LTkwggEiMA0GCSqGSIb3
+                  DQEBAQUAA4IBDwAwggEKAoIBAQCuyBsXwFztdkIgqJILVmHFBfrfZWXjAbektTH0
+                  BvuQxdpFmqWQznrMLd0OE9lQ3/O2nvflJs/ijK/G4slxjUra0Jra6iNoUUpkY6yN
+                  1OEH3FJ9CPXinjjg6u0FnAXhaHWy/SXOEQgi1X/daFNrvppuBOldDd3dST8Kprw/
+                  LRts+QBmWh4lohCyejlbpttWUmyjSuosB6hiE7YPEPXJ4BpKA/uk7HcOWw3KyFDq
+                  ty2dVCNLhcgya38GxuDILC2ClM5y0/rqI0UGu6hYQ7zI6gDrOfHAqa+jcepVeRuv
+                  i3pbWZCz6HzE8Lma/WB+GcJiictlp/lQKbI/SW09enlNCWOzAgMBAAEwDQYJKoZI
+                  hvcNAQELBQADggIBAJIUBdflopXUxgtDrKRc9H2JbOYIPuVAOUozfGHQEygf42WN
+                  maFUyxEciv6lglHuuefTJPGLCW5OhXDw2Db4E+uEQeo5tCPnBMvSI8MahOt6BPcd
+                  HeinEdUW1o9tDabJLEH1RCfjY/Sx3Y5lsYYqvGOH9NXc2MEIGd2LA+vtSLlDNTUb
+                  U85TgfdE+k2UsbbaVAynJUx+wpNdvov+20xgkxaOtQlIAJmng4iwXGCQ9FKw0jy2
+                  tpCDl3YFmTX/g4CZeAkFK4BQR89MtMmJG4muqM/0QSvCRT2z9Klz0hgO2pFD0ON3
+                  ueR/QVch51ktOXMzMUKbnUuA4y6nujnX34/eWK4LIvwyq8GZNXXsrdgU2zUm2lrc
+                  lK1WpJB5r674lcq1w6M07O8kYksaNkNbwb3tJwzfOjY2Beyz/O4b5Lp7Co/fsncy
+                  ZDXBgKWu8yHmifbkyy6V4F5y7LkROmbBLqLOsoXC/hgHcOnGZWt99joH1eJ31JW1
+                  aC7qjAtwCSHJ9UW3J5oP0ZTSA7buBMvjn6cOCKc6yrjyxIExcDU5CF/N9ciG3Sz+
+                  K7ECQj23QQJRCCEM55ffdp+eEbAgibXis8EEFM+nw7Y/tkYFyRmd7cCDTMgAVxRR
+                  Ndzuvh4RR2WYEJ70UVmIUZbYgHPfV1fZXq3YbMVMZDw69y5GCZyNlXTO0i9I
+                  -----END CERTIFICATE-----
+                x-content-type: application/x-x509-user-cert
+        "400":
+          description: Bad request. The request body is not a valid Certificate Signing
+            Request.
+        "401":
+          description: Unauthorized. The Authorization header does not contain a valid
+            Access Token.
+        "500":
+          description: Internal server error. Something went wrong.
+      security:
+      - csr_auth:
+        - write:pets
+        - read:pets
+components:
+  schemas: {}
+  securitySchemes:
+    csr_auth:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: https://as.emsp.oidcharge.primbs.dev/authorize
+          tokenUrl: https://as.emsp.oidcharge.primbs.dev/token
+          refreshUrl: https://as.emsp.oidcharge.primbs.dev/refresh
+          scopes:
+            csr: Send Certificate Signing Requests

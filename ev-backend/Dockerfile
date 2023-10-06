@@ -19,8 +19,9 @@ COPY ./config ./config
 COPY ./csr.sh ./csr.sh
 RUN mkdir ./output
 
+ENV PORT=8080
 ENV CSR_ENDPOINT=http://emsp.localhost
 ENV OUTPUT_FILE=./output/cc.cer
 
-EXPOSE 8080/tcp
+EXPOSE ${PORT}/tcp
 ENTRYPOINT ["./server"]
