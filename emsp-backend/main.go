@@ -23,14 +23,14 @@ func main() {
 		return
 	}
 
-	// Load JWKS
-	log.Printf("Loading JWKS...")
-	err = emsp_backend.LoadJwks(emsp_backend.Configuration.JwksUri)
-	if err != nil {
-		log.Fatalf("Failed to load JWKS: " + err.Error())
-		return
-	}
-	log.Printf("JWKS loaded")
+	// // Load JWKS
+	// log.Printf("Loading JWKS...")
+	// err = emsp_backend.LoadJwks(emsp_backend.Configuration.JwksUri)
+	// if err != nil {
+	// 	log.Fatalf("Failed to load JWKS: " + err.Error())
+	// 	return
+	// }
+	// log.Printf("JWKS loaded")
 
 	// Initialize Router
 	router := emsp_backend.NewRouter()

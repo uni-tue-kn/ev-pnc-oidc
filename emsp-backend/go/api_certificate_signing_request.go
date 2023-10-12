@@ -154,7 +154,7 @@ func SendCrt(crtPath string, w *http.ResponseWriter) error {
 	}
 	defer crtFile.Close()
 
-	_, err = io.Copy((*w), crtFile)
+	_, err = io.Copy(*w, crtFile)
 	if err != nil {
 		return errors.Join(errors.New("Failed to copy CRT File"), err)
 	}
@@ -163,19 +163,19 @@ func SendCrt(crtPath string, w *http.ResponseWriter) error {
 }
 
 func PostCsr(w http.ResponseWriter, r *http.Request) {
-	// Validate authorization
-	err := ValidateAuthorization(r)
-	if err != nil {
-		log.Printf(err.Error())
-		w.WriteHeader(http.StatusUnauthorized)
-		return
-	}
+	// // Validate authorization
+	// err := ValidateAuthorization(r)
+	// if err != nil {
+	// 	log.Printf(err.Error())
+	// 	w.WriteHeader(http.StatusUnauthorized)
+	// 	return
+	// }
 
 	// Validate Content Type
 	contentType := r.Header.Get("content-type")
 	if contentType != "application/pkcs10" {
 		log.Printf("Invalid Content Type")
-		w.WriteHeader(http.StatusBadRequest)
+		http.Error(w, "Invalid Content Type", http.StatusBadRequest)
 		return
 	}
 
@@ -183,7 +183,7 @@ func PostCsr(w http.ResponseWriter, r *http.Request) {
 	csrId, err := DownloadCsr(r)
 	if err != nil {
 		log.Printf(err.Error())
-		w.WriteHeader(http.StatusInternalServerError)
+		http.Error(w, "Internal Server Error. See log.", http.StatusInternalServerError)
 		return
 	}
 
@@ -199,18 +199,17 @@ func PostCsr(w http.ResponseWriter, r *http.Request) {
 	err = SignCsr(csrPath, crtPath)
 	if err != nil {
 		log.Printf(err.Error())
-		w.WriteHeader(http.StatusInternalServerError)
+		http.Error(w, "Internal Server Error. See log.", http.StatusInternalServerError)
 		return
 	}
 
 	// Send CRT File in response body
+	w.Header().Set("Content-Type", "application/x-x509-user-cert; charset=UTF-8")
+	w.WriteHeader(http.StatusCreated)
 	err = SendCrt(crtPath, &w)
 	if err != nil {
 		log.Printf(err.Error())
-		w.WriteHeader(http.StatusInternalServerError)
+		http.Error(w, "Internal Server Error. See log.", http.StatusInternalServerError)
 		return
 	}
-
-	w.Header().Set("Content-Type", "application/x-x509-user-cert; charset=UTF-8")
-	w.WriteHeader(http.StatusCreated)
 }
