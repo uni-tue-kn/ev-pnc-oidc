@@ -1,0 +1,610 @@
+openapi: 3.0.3
+info:
+  title: eMSP Authorization Server
+  description: Authorization Server of an e-Mobility Service Provider written in Go.
+  version: 0.0.0
+servers:
+- url: http://localhost:8080
+- url: https://as.oidcharge.primbs.dev
+tags:
+- name: Discovery
+  description: OIDC Discovery
+- name: Authorization
+  description: OAuth Authorization Flow
+paths:
+  /.well-known/openid-configuration:
+    get:
+      tags:
+      - Discovery
+      summary: Gets the OpenID Configuration
+      description: Gets the OpenID Configuration.
+      operationId: getDiscoveryDocument
+      responses:
+        "200":
+          description: Discovery Document
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DiscoveryDocument'
+  /api/jwks:
+    get:
+      tags:
+      - Discovery
+      summary: Gets the JWKS
+      description: Gets the JSON Web Key Set (JWKS).
+      operationId: getJwks
+      responses:
+        "200":
+          description: JWK Set
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JwkSet'
+  /api/par:
+    post:
+      tags:
+      - Authorization
+      summary: Pushed Authorization Request
+      description: Post a Pushed Authorization Request
+      operationId: postPushedAuthorizationRequest
+      requestBody:
+        $ref: '#/components/requestBodies/PushedAuthorizationRequest'
+      responses:
+        "201":
+          description: PAR Request URI created
+          headers:
+            Cache-Control:
+              description: Disables caching.
+              style: simple
+              explode: false
+              schema:
+                type: string
+                example: "no-cache, no-store"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PushedAuthorizationResponse'
+  /api/authorization:
+    get:
+      tags:
+      - Authorization
+      summary: Authorization Frontend
+      description: Gets the frontend for Client Authorization
+      operationId: getAuthorizationFrontend
+      parameters:
+      - name: client_id
+        in: query
+        required: false
+        style: form
+        explode: true
+        schema:
+          $ref: '#/components/schemas/ClientId'
+      - name: request_uri
+        in: query
+        required: false
+        style: form
+        explode: true
+        schema:
+          $ref: '#/components/schemas/RequestUri'
+      responses:
+        "200":
+          description: Authorization UI
+          content:
+            text/html:
+              schema:
+                type: string
+                x-content-type: text/html
+    post:
+      tags:
+      - Authorization
+      summary: Authorization API Endpoint
+      description: Post an Authorization Grant
+      operationId: postAuthorizationBackend
+      requestBody:
+        $ref: '#/components/requestBodies/AuthorizationRequest'
+      responses:
+        "302":
+          description: Forward to Client with Authorization Code
+  /api/token:
+    post:
+      tags:
+      - Authorization
+      summary: Token Request
+      description: Post a Token Request
+      operationId: postTokenRequest
+      requestBody:
+        $ref: '#/components/requestBodies/TokenRequest'
+      responses:
+        "200":
+          description: Issues an Access Token
+          headers:
+            Cache-Control:
+              description: Disables caching.
+              style: simple
+              explode: false
+              schema:
+                type: string
+                example: no-store
+            Pragma:
+              description: Disables caching.
+              style: simple
+              explode: false
+              schema:
+                type: string
+                example: no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+  /api/login:
+    post:
+      tags:
+      - Authentication
+      summary: Login
+      description: Sends credentials to login.
+      operationId: postLogin
+      requestBody:
+        $ref: '#/components/requestBodies/AuthenticationRequest'
+      responses:
+        "200":
+          description: Successful Authentication
+          headers:
+            Set-Cookie:
+              description: Sets a Session Cookie.
+              style: simple
+              explode: false
+              schema:
+                type: string
+                example: gh2KkXwYLsiGVx3A922JiaTYjbMERa4S
+        "401":
+          description: Invalid Credentials
+components:
+  schemas:
+    DiscoveryDocument:
+      required:
+      - authorization_endpoint
+      - issuer
+      - jwks_uri
+      type: object
+      properties:
+        jwks_uri:
+          type: string
+          format: uri
+          example: https://op.example.com/api/jwks
+        issuer:
+          type: string
+          example: https://op.example.com
+        authorization_endpoint:
+          type: string
+          format: uri
+          example: https://op.example.com/api/authorization
+        token_endpoint:
+          type: string
+          format: uri
+          example: https://op.example.com/api/token
+        pushed_authorization_request_endpoint:
+          type: string
+          format: uri
+          example: https://op.example.com/api/par
+      example:
+        pushed_authorization_request_endpoint: https://op.example.com/api/par
+        jwks_uri: https://op.example.com/api/jwks
+        issuer: https://op.example.com
+        authorization_endpoint: https://op.example.com/api/authorization
+        token_endpoint: https://op.example.com/api/token
+    JwkSet:
+      required:
+      - keys
+      type: object
+      properties:
+        keys:
+          type: array
+          items:
+            $ref: '#/components/schemas/Jwk'
+      example:
+        keys:
+        - d: ""
+          e: ""
+          use: sig
+          crv: P-256
+          kid: 544ba1c3-eb96-4e94-9f25-c23f6da2a0f1
+          x5c: ""
+          "n": ""
+          kty: RSA
+          x5t#S256: ""
+          x5t: ""
+          key_ops:
+          - "[\"sign\",\"verify\"]"
+          - "[\"sign\",\"verify\"]"
+          x: ""
+          x5u: http://example.com/aeiou
+          "y": ""
+          alg: RS256
+        - d: ""
+          e: ""
+          use: sig
+          crv: P-256
+          kid: 544ba1c3-eb96-4e94-9f25-c23f6da2a0f1
+          x5c: ""
+          "n": ""
+          kty: RSA
+          x5t#S256: ""
+          x5t: ""
+          key_ops:
+          - "[\"sign\",\"verify\"]"
+          - "[\"sign\",\"verify\"]"
+          x: ""
+          x5u: http://example.com/aeiou
+          "y": ""
+          alg: RS256
+    Jwk:
+      required:
+      - kty
+      type: object
+      properties:
+        kty:
+          type: string
+          example: RSA
+          enum:
+          - RSA
+          - EC
+          - oct
+        use:
+          type: string
+          example: sig
+          enum:
+          - sig
+          - enc
+        key_ops:
+          type: array
+          items:
+            type: string
+            example: "[\"sign\",\"verify\"]"
+            enum:
+            - sign
+            - verify
+            - encrypt
+            - decrypt
+            - wrapKey
+            - unwrapKey
+            - deriveKey
+            - deriveBits
+        alg:
+          type: string
+          example: RS256
+          enum:
+          - HS256
+          - HS384
+          - HS512
+          - RS256
+          - RS384
+          - RS512
+          - ES256
+          - ES384
+          - ES512
+          - PS256
+          - PS384
+          - PS512
+        kid:
+          type: string
+          format: uuid
+          example: 544ba1c3-eb96-4e94-9f25-c23f6da2a0f1
+        x5u:
+          type: string
+          format: uri
+        x5c:
+          type: string
+          format: byte
+        x5t:
+          type: string
+          format: byte
+        x5t#S256:
+          type: string
+          format: byte
+        crv:
+          type: string
+          enum:
+          - P-256
+          - P-384
+          - P-521
+        x:
+          type: string
+          format: byte
+        "y":
+          type: string
+          format: byte
+        d:
+          type: string
+          format: byte
+        "n":
+          type: string
+          format: byte
+        e:
+          type: string
+          format: byte
+      example:
+        d: ""
+        e: ""
+        use: sig
+        crv: P-256
+        kid: 544ba1c3-eb96-4e94-9f25-c23f6da2a0f1
+        x5c: ""
+        "n": ""
+        kty: RSA
+        x5t#S256: ""
+        x5t: ""
+        key_ops:
+        - "[\"sign\",\"verify\"]"
+        - "[\"sign\",\"verify\"]"
+        x: ""
+        x5u: http://example.com/aeiou
+        "y": ""
+        alg: RS256
+    PushedAuthorizationRequest:
+      required:
+      - client_id
+      - client_secret
+      - code_challenge
+      - code_challenge_method
+      - redirect_uri
+      - response_type
+      - scope
+      type: object
+      properties:
+        response_type:
+          $ref: '#/components/schemas/ResponseType'
+        redirect_uri:
+          $ref: '#/components/schemas/RedirectUri'
+        scope:
+          type: string
+        state:
+          type: string
+        code_challenge:
+          $ref: '#/components/schemas/CodeChallenge'
+        code_challenge_method:
+          $ref: '#/components/schemas/CodeChallengeMethod'
+        client_id:
+          $ref: '#/components/schemas/ClientId'
+        client_secret:
+          $ref: '#/components/schemas/ClientSecret'
+        authorization_details:
+          $ref: '#/components/schemas/AuthorizationDetails'
+    PushedAuthorizationResponse:
+      required:
+      - expires_in
+      - request_uri
+      type: object
+      properties:
+        request_uri:
+          $ref: '#/components/schemas/RequestUri'
+        expires_in:
+          maximum: 600
+          minimum: 5
+          type: integer
+          description: Lifetime of Request URI in seconds.
+      example:
+        expires_in: 52
+        request_uri: http://example.com/aeiou
+    AuthorizationRequest:
+      required:
+      - actions
+      - charging_period_end
+      - charging_period_start
+      - maximum_amount
+      - maximum_currency
+      - maximum_transaction_amount
+      - maximum_transaction_currency
+      - scopes_granted
+      type: object
+      properties:
+        scopes_granted:
+          type: boolean
+        actions:
+          $ref: '#/components/schemas/Actions'
+        charging_period_start:
+          $ref: '#/components/schemas/StartTime'
+        charging_period_end:
+          $ref: '#/components/schemas/EndTime'
+        maximum_amount:
+          $ref: '#/components/schemas/Amount'
+        maximum_currency:
+          $ref: '#/components/schemas/Currency'
+        maximum_transaction_amount:
+          $ref: '#/components/schemas/Amount'
+        maximum_transaction_currency:
+          $ref: '#/components/schemas/Currency'
+    ResponseType:
+      type: string
+      enum:
+      - code
+    RequestUri:
+      type: string
+      description: The Request URI of a Pushed Authorization Request.
+      format: uri
+    ClientId:
+      type: string
+    ClientSecret:
+      type: string
+    RedirectUri:
+      type: string
+      format: uri
+    CodeChallenge:
+      type: string
+      format: byte
+    CodeChallengeMethod:
+      type: string
+      enum:
+      - S256
+    CodeVerifier:
+      type: string
+      format: byte
+    AuthorizationDetails:
+      type: array
+      items:
+        $ref: '#/components/schemas/AuthorizationDetail'
+      x-schema-name: AuthorizationDetails
+    AuthorizationDetail:
+      required:
+      - actions
+      - chargingPeriod
+      - locations
+      - maximumAmount
+      - maximumTransactionAmount
+      - type
+      type: object
+      properties:
+        type:
+          type: string
+          example: pnc_contract_request
+        actions:
+          $ref: '#/components/schemas/Actions'
+        locations:
+          type: array
+          items:
+            type: string
+            format: uri
+            example: https://rs.example.com
+        chargingPeriod:
+          $ref: '#/components/schemas/ChargingPeriod'
+        maximumAmount:
+          $ref: '#/components/schemas/CurrencyAmount'
+        maximumTransactionAmount:
+          $ref: '#/components/schemas/CurrencyAmount'
+    Actions:
+      type: array
+      items:
+        $ref: '#/components/schemas/Action'
+      x-schema-name: Actions
+    Action:
+      type: string
+      example: contract_provisioning
+      enum:
+      - contract_provisioning
+    CurrencyAmount:
+      required:
+      - amount
+      - currency
+      type: object
+      properties:
+        amount:
+          $ref: '#/components/schemas/Amount'
+        currency:
+          $ref: '#/components/schemas/Currency'
+    Amount:
+      type: string
+      format: decimal
+      example: "123.50"
+    Currency:
+      type: string
+      example: EUR
+      enum:
+      - EUR
+      - USD
+    ChargingPeriod:
+      required:
+      - end
+      - start
+      type: object
+      properties:
+        start:
+          $ref: '#/components/schemas/StartTime'
+        end:
+          $ref: '#/components/schemas/EndTime'
+    StartTime:
+      type: string
+      format: date-time
+      example: 2023-09-07T14:00:00Z
+    EndTime:
+      type: string
+      format: date-time
+      example: 2023-10-07T15:00:00Z
+    TokenRequest:
+      required:
+      - client_id
+      - client_secret
+      - code
+      - code_verifier
+      - grant_type
+      - redirect_uri
+      type: object
+      properties:
+        grant_type:
+          type: string
+          enum:
+          - authorization_code
+        code:
+          type: string
+        redirect_uri:
+          $ref: '#/components/schemas/RedirectUri'
+        client_id:
+          $ref: '#/components/schemas/ClientId'
+        client_secret:
+          $ref: '#/components/schemas/ClientSecret'
+        code_verifier:
+          $ref: '#/components/schemas/CodeVerifier'
+    TokenResponse:
+      required:
+      - access_token
+      - expires_in
+      type: object
+      properties:
+        access_token:
+          type: string
+        expires_in:
+          minimum: 0
+          type: integer
+        refresh_token:
+          type: string
+        id_token:
+          type: string
+      example:
+        access_token: access_token
+        refresh_token: refresh_token
+        id_token: id_token
+        expires_in: 0
+    BasicCredentials:
+      required:
+      - password
+      - username
+      type: object
+      properties:
+        username:
+          $ref: '#/components/schemas/Username'
+        password:
+          $ref: '#/components/schemas/Password'
+    Username:
+      type: string
+    Password:
+      type: string
+      format: password
+  requestBodies:
+    PushedAuthorizationRequest:
+      description: The Pushed Authorization Request Body
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/PushedAuthorizationRequest'
+        application/x-www-form-urlencoded:
+          schema:
+            $ref: '#/components/schemas/PushedAuthorizationRequest'
+    AuthorizationRequest:
+      description: The Authorization Request Body
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/AuthorizationRequest'
+        application/x-www-form-urlencoded:
+          schema:
+            $ref: '#/components/schemas/AuthorizationRequest'
+    TokenRequest:
+      description: Token Request Body
+      content:
+        application/x-www-form-urlencoded:
+          schema:
+            $ref: '#/components/schemas/TokenRequest'
+    AuthenticationRequest:
+      description: User Login Credentials
+      content:
+        application/x-www-form-urlencoded:
+          schema:
+            $ref: '#/components/schemas/BasicCredentials'

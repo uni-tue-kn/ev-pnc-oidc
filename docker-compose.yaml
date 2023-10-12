@@ -56,8 +56,23 @@ services:
       - traefik.http.routers.emsp-as.rule=Host(`as.oidcharge.primbs.dev`)
       - traefik.http.routers.emsp-as.tls=true
       - traefik.http.routers.emsp-as.tls.certresolver=letsencrypt
+    environment:
+      PORT: 8080
+      # Set Authlete API Key and Secrets
+      SERVICE_API_KEY_FILE: /run/secrets/authlete_api_key
+      SERVICE_API_SECRET_FILE: /run/secrets/authlete_api_secret
+      # Set users
+      USER_CREDS: /app/config/users.json
+      # Set key pair directory
+      KEYS_DIR: /app/keys
+    secrets:
+      # Import Authlete API Key and Secrets
+      - authlete_api_key
+      - authlete_api_secret
     volumes:
-      - .secrets/authlete.properties:/app/authlete.properties
+      # Mount users file and key pairs
+      - .secrets/as/config:/app/config
+      - .secrets/as/keys:/app/keys
 
   # eMSP Backend to request X.509 certificates
   emsp:
@@ -74,8 +89,8 @@ services:
       TRUSTED_AUDIENCE: emsp_backend
       JWKS_URI: http://as:8080/api/jwks
       REQUIRED_SCOPES: csr
-      CSR_DIR: ./csr
-      CRT_DIR: ./crt
+      CSR_DIR: /app/csr
+      CRT_DIR: /app/crt
       SIGNING_CMD: ./scripts/sign-cert.sh
       SIGNING_ARGS: "$${CSR_FILE} $${CRT_FILE}"
     labels:
@@ -140,6 +155,10 @@ secrets:
     file: .secrets/inwx_password.txt
   inwx_secret:
     file: .secrets/inwx_secret.txt
+  authlete_api_key:
+    file: .secrets/authlete_api_key.txt
+  authlete_api_secret:
+    file: .secrets/authlete_api_secret.txt
 
 volumes:
   cc_output:
