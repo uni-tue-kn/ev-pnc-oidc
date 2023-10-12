@@ -48,7 +48,7 @@ The EV Backend can be configured with the following environment variables:
 
 **Signing Command `SIGNING_CMD`**
   Command to sign the CSR.
-  Default is `./sign-cert.sh`
+  Default is `./scripts/sign-cert.sh`
 
 **Signing Arguments `SIGNING_ARGS`**
   Space-separated signing command arguments.

@@ -39,7 +39,7 @@ ENV TRUSTED_AUDIENCE=emsp_backend
 ENV REQUIRED_SCOPES=csr
 ENV CSR_DIR=./csr
 ENV CRT_DIR=./crt
-ENV SIGNING_CMD=./sign-cert.sh
+ENV SIGNING_CMD=./scripts/sign-cert.sh
 ENV SIGNING_ARGS="${CSR_FILE} ${CRT_FILE}"
 
 # Expose port

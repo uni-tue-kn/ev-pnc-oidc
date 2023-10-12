@@ -83,7 +83,7 @@ func LoadConfiguration() error {
 	// Load Signing Command
 	Configuration.SigningCommand = os.Getenv("SIGNING_CMD")
 	if Configuration.SigningCommand == "" {
-		Configuration.SigningCommand = "./sign-cert.sh"
+		Configuration.SigningCommand = "./scripts/sign-cert.sh"
 	}
 	log.Printf("[CONFIG] Signing Command is '" + Configuration.SigningCommand + "'")
 
