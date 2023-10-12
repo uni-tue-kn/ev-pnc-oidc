@@ -12,7 +12,7 @@ The OpenAPI Specificatino is provided [here](./api/swagger.yaml).
 
 ### Configuration
 
-The EV Backend can be configured with the following environment variables:
+The eMSP Backend can be configured with the following environment variables:
 
 **Port `PORT`**
   The Port that the server is listening to.
