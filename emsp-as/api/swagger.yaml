@@ -2,15 +2,15 @@ openapi: 3.0.3
 info:
   title: eMSP Authorization Server
   description: Authorization Server of an e-Mobility Service Provider written in Go.
-  version: 0.0.0
+  version: 0.1.0
 servers:
-- url: http://localhost:8080
-- url: https://as.oidcharge.primbs.dev
+  - url: http://localhost:8080
+  - url: https://as.oidcharge.primbs.dev
 tags:
-- name: Discovery
-  description: OIDC Discovery
-- name: Authorization
-  description: OAuth Authorization Flow
+  - name: Discovery
+    description: Endpoints related to the OIDC discovery.
+  - name: Authorization
+    description: Endpoints related to the OAuth Authorization Flow.
 paths:
   /.well-known/openid-configuration:
     get:
@@ -29,7 +29,7 @@ paths:
   /api/jwks:
     get:
       tags:
-      - Discovery
+        - Discovery
       summary: Gets the JWKS
       description: Gets the JSON Web Key Set (JWKS).
       operationId: getJwks
@@ -43,7 +43,7 @@ paths:
   /api/par:
     post:
       tags:
-      - Authorization
+        - Authorization
       summary: Pushed Authorization Request
       description: Post a Pushed Authorization Request
       operationId: postPushedAuthorizationRequest
@@ -64,28 +64,30 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PushedAuthorizationResponse'
+        "400":
+          description: Parsing body failed
   /api/authorization:
     get:
       tags:
-      - Authorization
+        - Authorization
       summary: Authorization Frontend
       description: Gets the frontend for Client Authorization
       operationId: getAuthorizationFrontend
       parameters:
-      - name: client_id
-        in: query
-        required: false
-        style: form
-        explode: true
-        schema:
-          $ref: '#/components/schemas/ClientId'
-      - name: request_uri
-        in: query
-        required: false
-        style: form
-        explode: true
-        schema:
-          $ref: '#/components/schemas/RequestUri'
+        - name: client_id
+          in: query
+          required: false
+          style: form
+          explode: true
+          schema:
+            $ref: '#/components/schemas/ClientId'
+        - name: request_uri
+          in: query
+          required: false
+          style: form
+          explode: true
+          schema:
+            $ref: '#/components/schemas/RequestUri'
       responses:
         "200":
           description: Authorization UI
@@ -96,7 +98,7 @@ paths:
                 x-content-type: text/html
     post:
       tags:
-      - Authorization
+        - Authorization
       summary: Authorization API Endpoint
       description: Post an Authorization Grant
       operationId: postAuthorizationBackend
@@ -108,7 +110,7 @@ paths:
   /api/token:
     post:
       tags:
-      - Authorization
+        - Authorization
       summary: Token Request
       description: Post a Token Request
       operationId: postTokenRequest
@@ -139,7 +141,7 @@ paths:
   /api/login:
     post:
       tags:
-      - Authentication
+        - Authentication
       summary: Login
       description: Sends credentials to login.
       operationId: postLogin
@@ -161,10 +163,6 @@ paths:
 components:
   schemas:
     DiscoveryDocument:
-      required:
-      - authorization_endpoint
-      - issuer
-      - jwks_uri
       type: object
       properties:
         jwks_uri:
@@ -186,6 +184,10 @@ components:
           type: string
           format: uri
           example: https://op.example.com/api/par
+      required:
+        - authorization_endpoint
+        - issuer
+        - jwks_uri
       example:
         pushed_authorization_request_endpoint: https://op.example.com/api/par
         jwks_uri: https://op.example.com/api/jwks
@@ -194,7 +196,7 @@ components:
         token_endpoint: https://op.example.com/api/token
     JwkSet:
       required:
-      - keys
+        - keys
       type: object
       properties:
         keys:
@@ -203,88 +205,88 @@ components:
             $ref: '#/components/schemas/Jwk'
       example:
         keys:
-        - d: ""
-          e: ""
-          use: sig
-          crv: P-256
-          kid: 544ba1c3-eb96-4e94-9f25-c23f6da2a0f1
-          x5c: ""
-          "n": ""
-          kty: RSA
-          x5t#S256: ""
-          x5t: ""
-          key_ops:
-          - "[\"sign\",\"verify\"]"
-          - "[\"sign\",\"verify\"]"
-          x: ""
-          x5u: http://example.com/aeiou
-          "y": ""
-          alg: RS256
-        - d: ""
-          e: ""
-          use: sig
-          crv: P-256
-          kid: 544ba1c3-eb96-4e94-9f25-c23f6da2a0f1
-          x5c: ""
-          "n": ""
-          kty: RSA
-          x5t#S256: ""
-          x5t: ""
-          key_ops:
-          - "[\"sign\",\"verify\"]"
-          - "[\"sign\",\"verify\"]"
-          x: ""
-          x5u: http://example.com/aeiou
-          "y": ""
-          alg: RS256
+          - d: ""
+            e: ""
+            use: sig
+            crv: P-256
+            kid: 544ba1c3-eb96-4e94-9f25-c23f6da2a0f1
+            x5c: ""
+            "n": ""
+            kty: RSA
+            x5t#S256: ""
+            x5t: ""
+            key_ops:
+            - "[\"sign\",\"verify\"]"
+            - "[\"sign\",\"verify\"]"
+            x: ""
+            x5u: http://example.com/aeiou
+            "y": ""
+            alg: RS256
+          - d: ""
+            e: ""
+            use: sig
+            crv: P-256
+            kid: 544ba1c3-eb96-4e94-9f25-c23f6da2a0f1
+            x5c: ""
+            "n": ""
+            kty: RSA
+            x5t#S256: ""
+            x5t: ""
+            key_ops:
+            - "[\"sign\",\"verify\"]"
+            - "[\"sign\",\"verify\"]"
+            x: ""
+            x5u: http://example.com/aeiou
+            "y": ""
+            alg: RS256
     Jwk:
       required:
-      - kty
+        - kty
       type: object
       properties:
         kty:
           type: string
           example: RSA
           enum:
-          - RSA
-          - EC
-          - oct
+            - RSA
+            - EC
+            - oct
         use:
           type: string
           example: sig
           enum:
-          - sig
-          - enc
+            - sig
+            - enc
         key_ops:
           type: array
           items:
             type: string
             example: "[\"sign\",\"verify\"]"
             enum:
-            - sign
-            - verify
-            - encrypt
-            - decrypt
-            - wrapKey
-            - unwrapKey
-            - deriveKey
-            - deriveBits
+              - sign
+              - verify
+              - encrypt
+              - decrypt
+              - wrapKey
+              - unwrapKey
+              - deriveKey
+              - deriveBits
         alg:
           type: string
           example: RS256
           enum:
-          - HS256
-          - HS384
-          - HS512
-          - RS256
-          - RS384
-          - RS512
-          - ES256
-          - ES384
-          - ES512
-          - PS256
-          - PS384
-          - PS512
+            - HS256
+            - HS384
+            - HS512
+            - RS256
+            - RS384
+            - RS512
+            - ES256
+            - ES384
+            - ES512
+            - PS256
+            - PS384
+            - PS512
         kid:
           type: string
           format: uuid
@@ -304,9 +306,9 @@ components:
         crv:
           type: string
           enum:
-          - P-256
-          - P-384
-          - P-521
+            - P-256
+            - P-384
+            - P-521
         x:
           type: string
           format: byte
@@ -334,21 +336,13 @@ components:
         x5t#S256: ""
         x5t: ""
         key_ops:
-        - "[\"sign\",\"verify\"]"
-        - "[\"sign\",\"verify\"]"
+          - "[\"sign\",\"verify\"]"
+          - "[\"sign\",\"verify\"]"
         x: ""
         x5u: http://example.com/aeiou
         "y": ""
         alg: RS256
     PushedAuthorizationRequest:
-      required:
-      - client_id
-      - client_secret
-      - code_challenge
-      - code_challenge_method
-      - redirect_uri
-      - response_type
-      - scope
       type: object
       properties:
         response_type:
@@ -356,45 +350,55 @@ components:
         redirect_uri:
           $ref: '#/components/schemas/RedirectUri'
         scope:
-          type: string
+          $ref: '#/components/schemas/Scope'
+        client_id:
+          $ref: '#/components/schemas/ClientId'
         state:
-          type: string
+          $ref: '#/components/schemas/State'
         code_challenge:
           $ref: '#/components/schemas/CodeChallenge'
         code_challenge_method:
           $ref: '#/components/schemas/CodeChallengeMethod'
-        client_id:
-          $ref: '#/components/schemas/ClientId'
-        client_secret:
-          $ref: '#/components/schemas/ClientSecret'
         authorization_details:
           $ref: '#/components/schemas/AuthorizationDetails'
-    PushedAuthorizationResponse:
       required:
-      - expires_in
-      - request_uri
+        - response_type
+        - redirect_uri
+        - scope
+        - client_id
+        - code_challenge
+        - code_challenge_method
+        - authorization_details
+    Scope:
+      type: string
+      example: pnc
+    State:
+      type: string
+      example: OacnSace5b
+    PushedAuthorizationResponse:
       type: object
       properties:
         request_uri:
           $ref: '#/components/schemas/RequestUri'
         expires_in:
-          maximum: 600
-          minimum: 5
           type: integer
           description: Lifetime of Request URI in seconds.
-      example:
-        expires_in: 52
-        request_uri: http://example.com/aeiou
+          maximum: 600
+          minimum: 5
+          example: 300
+      required:
+        - request_uri
+        - expires_in
     AuthorizationRequest:
       required:
-      - actions
-      - charging_period_end
-      - charging_period_start
-      - maximum_amount
-      - maximum_currency
-      - maximum_transaction_amount
-      - maximum_transaction_currency
-      - scopes_granted
+        - actions
+        - charging_period_end
+        - charging_period_start
+        - maximum_amount
+        - maximum_currency
+        - maximum_transaction_amount
+        - maximum_transaction_currency
+        - scopes_granted
       type: object
       properties:
         scopes_granted:
@@ -416,11 +420,12 @@ components:
     ResponseType:
       type: string
       enum:
-      - code
+        - code
     RequestUri:
       type: string
       description: The Request URI of a Pushed Authorization Request.
       format: uri
+      example: urn:example:bwc4JK-ESC0w8acc191e-Y1LTC2
     ClientId:
       type: string
     ClientSecret:
@@ -434,7 +439,7 @@ components:
     CodeChallengeMethod:
       type: string
       enum:
-      - S256
+        - S256
     CodeVerifier:
       type: string
       format: byte
@@ -445,12 +450,12 @@ components:
       x-schema-name: AuthorizationDetails
     AuthorizationDetail:
       required:
-      - actions
-      - chargingPeriod
-      - locations
-      - maximumAmount
-      - maximumTransactionAmount
-      - type
+        - actions
+        - chargingPeriod
+        - locations
+        - maximumAmount
+        - maximumTransactionAmount
+        - type
       type: object
       properties:
         type:
@@ -479,11 +484,11 @@ components:
       type: string
       example: contract_provisioning
       enum:
-      - contract_provisioning
+        - contract_provisioning
     CurrencyAmount:
       required:
-      - amount
-      - currency
+        - amount
+        - currency
       type: object
       properties:
         amount:
@@ -498,12 +503,12 @@ components:
       type: string
       example: EUR
       enum:
-      - EUR
-      - USD
+        - EUR
+        - USD
     ChargingPeriod:
       required:
-      - end
-      - start
+        - end
+        - start
       type: object
       properties:
         start:
@@ -520,18 +525,18 @@ components:
       example: 2023-10-07T15:00:00Z
     TokenRequest:
       required:
-      - client_id
-      - client_secret
-      - code
-      - code_verifier
-      - grant_type
-      - redirect_uri
+        - client_id
+        - client_secret
+        - code
+        - code_verifier
+        - grant_type
+        - redirect_uri
       type: object
       properties:
         grant_type:
           type: string
           enum:
-          - authorization_code
+            - authorization_code
         code:
           type: string
         redirect_uri:
@@ -544,8 +549,8 @@ components:
           $ref: '#/components/schemas/CodeVerifier'
     TokenResponse:
       required:
-      - access_token
-      - expires_in
+        - access_token
+        - expires_in
       type: object
       properties:
         access_token:
@@ -564,8 +569,8 @@ components:
         expires_in: 0
     BasicCredentials:
       required:
-      - password
-      - username
+        - password
+        - username
       type: object
       properties:
         username:
@@ -581,9 +586,6 @@ components:
     PushedAuthorizationRequest:
       description: The Pushed Authorization Request Body
       content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/PushedAuthorizationRequest'
         application/x-www-form-urlencoded:
           schema:
             $ref: '#/components/schemas/PushedAuthorizationRequest'

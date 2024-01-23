@@ -9,7 +9,9 @@
 package emsp_as
 
 type PushedAuthorizationResponse struct {
+	// The Request URI of a Pushed Authorization Request.
 	RequestUri string `json:"request_uri"`
+
 	// Lifetime of Request URI in seconds.
-	ExpiresIn int32 `json:"expires_in"`
+	ExpiresIn int16 `json:"expires_in"`
 }

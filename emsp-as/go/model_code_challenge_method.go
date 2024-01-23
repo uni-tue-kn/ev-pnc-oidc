@@ -8,9 +8,8 @@
  */
 package emsp_as
 
-type CodeChallengeMethod string
-
 // List of CodeChallengeMethod
 const (
-	S256 CodeChallengeMethod = "S256"
+	S256 string = "S256"
+	None        = "none"
 )

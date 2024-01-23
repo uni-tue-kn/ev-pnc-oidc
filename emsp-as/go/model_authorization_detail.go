@@ -9,7 +9,7 @@
 package emsp_as
 
 type AuthorizationDetail struct {
-	Type_                    string          `json:"type"`
+	Type                     string          `json:"type"`
 	Actions                  *[]Action       `json:"actions"`
 	Locations                []string        `json:"locations"`
 	ChargingPeriod           *ChargingPeriod `json:"chargingPeriod"`

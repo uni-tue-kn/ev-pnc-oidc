@@ -9,13 +9,12 @@
 package emsp_as
 
 type PushedAuthorizationRequest struct {
-	ResponseType         *ResponseType          `json:"response_type"`
-	RedirectUri          string                 `json:"redirect_uri"`
-	Scope                string                 `json:"scope"`
-	State                string                 `json:"state,omitempty"`
-	CodeChallenge        string                 `json:"code_challenge"`
-	CodeChallengeMethod  *CodeChallengeMethod   `json:"code_challenge_method"`
-	ClientId             string                 `json:"client_id"`
-	ClientSecret         string                 `json:"client_secret"`
-	AuthorizationDetails *[]AuthorizationDetail `json:"authorization_details,omitempty"`
+	ResponseType         string                `json:"response_type"`
+	RedirectUri          string                `json:"redirect_uri"`
+	Scope                string                `json:"scope"`
+	ClientId             string                `json:"client_id"`
+	State                string                `json:"state,omitempty"`
+	CodeChallenge        string                `json:"code_challenge"`
+	CodeChallengeMethod  string                `json:"code_challenge_method"`
+	AuthorizationDetails []AuthorizationDetail `json:"authorization_details"`
 }

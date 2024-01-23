@@ -9,7 +9,10 @@
 package emsp_as
 
 import (
+	"encoding/json"
+	"log"
 	"net/http"
+	"net/url"
 )
 
 func GetAuthorizationFrontend(w http.ResponseWriter, r *http.Request) {
@@ -23,8 +26,58 @@ func PostAuthorizationBackend(w http.ResponseWriter, r *http.Request) {
 }
 
 func PostPushedAuthorizationRequest(w http.ResponseWriter, r *http.Request) {
+	// Parse HTTP Request body
+	err := r.ParseForm()
+	if err != nil {
+		log.Printf("Failed to parse request body")
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	authorizationDetailsJson, err := url.QueryUnescape(r.PostFormValue("authorization_details"))
+	if err != nil {
+		log.Printf("Failed to unescape authorization_details")
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	var authorizationDetails []AuthorizationDetail
+	err = json.Unmarshal([]byte(authorizationDetailsJson), &authorizationDetails)
+	if err != nil {
+		log.Printf("Failed to JSON decode authorization_details")
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	request := PushedAuthorizationRequest{
+		ResponseType:         r.PostFormValue("response_type"),
+		RedirectUri:          r.PostFormValue("redirect_uri"),
+		Scope:                r.PostFormValue("scope"),
+		ClientId:             r.PostFormValue("client_id"),
+		State:                r.PostFormValue("state"),
+		CodeChallenge:        r.PostFormValue("code_challenge"),
+		CodeChallengeMethod:  r.PostFormValue("code_challenge_method"),
+		AuthorizationDetails: authorizationDetails,
+	}
+
+	// TODO: Perform Pushed Authorization Request execution and get Request URI
+	par, err := json.Marshal(request)
+	log.Printf(string(par))
+	requestUri := ""
+
+	// Generate response.
+	response := PushedAuthorizationResponse{
+		RequestUri: requestUri,
+		ExpiresIn:  300, // 5 minutes
+	}
+
+	// Send response JSON encoded
+	err = json.NewEncoder(w).Encode(response)
+	if err != nil {
+		log.Printf("Failed to serialize response")
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Cache-Control", "no-cache, no-store")
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-	w.WriteHeader(http.StatusOK)
+	w.WriteHeader(http.StatusCreated)
 }
 
 func PostTokenRequest(w http.ResponseWriter, r *http.Request) {
