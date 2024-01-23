@@ -7,7 +7,7 @@ servers:
   - url: https://emsp.oidcharge.primbs.dev
 tags:
   - name: Certificate Signing Request
-  - description: Endpoints related to the Certificate Signing Request.
+    description: Endpoints related to the Certificate Signing Request.
 paths:
   /csr:
     post:
