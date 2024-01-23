@@ -11,7 +11,7 @@ RUN go build -a -installsuffix cgo -o server .
 
 FROM debian:stable AS runtime
 RUN apt-get update && apt-get upgrade -y && apt-get install -y openssl ca-certificates
-RUN  update-ca-certificates
+RUN update-ca-certificates
 
 WORKDIR /app
 COPY --from=build /go/src/server ./server
