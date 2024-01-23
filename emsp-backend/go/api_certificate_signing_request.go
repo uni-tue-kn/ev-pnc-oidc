@@ -40,58 +40,58 @@ func GetTokenKey(token *jwt.Token) (interface{}, error) {
 	return key, nil
 }
 
-func ValidateAuthorization(r *http.Request) error {
-	// Get Authorization Header
-	authorizationHeader := r.Header.Get("authorization")
-	if authorizationHeader == "" {
-		return errors.New("No Authorization Header present")
-	}
+// func ValidateAuthorization(r *http.Request) error {
+// 	// Get Authorization Header
+// 	authorizationHeader := r.Header.Get("authorization")
+// 	if authorizationHeader == "" {
+// 		return errors.New("No Authorization Header present")
+// 	}
 
-	// Get Bearer Token from Authorization Header
-	bearerHeader := strings.Split(authorizationHeader, " ")
-	if len(bearerHeader) != 2 {
-		return errors.New("Invalid Authorization Header")
-	}
-	if strings.ToLower(bearerHeader[0]) != "bearer" {
-		return errors.New("Expected Bearer Token")
-	}
+// 	// Get Bearer Token from Authorization Header
+// 	bearerHeader := strings.Split(authorizationHeader, " ")
+// 	if len(bearerHeader) != 2 {
+// 		return errors.New("Invalid Authorization Header")
+// 	}
+// 	if strings.ToLower(bearerHeader[0]) != "bearer" {
+// 		return errors.New("Expected Bearer Token")
+// 	}
 
-	// Parse Access Token
-	claims := jwt.MapClaims{}
-	accessToken, err := jwt.ParseWithClaims(bearerHeader[1], claims, GetTokenKey)
-	if err != nil {
-		return errors.New("Access Token validation failed")
-	}
+// 	// Parse Access Token
+// 	claims := jwt.MapClaims{}
+// 	accessToken, err := jwt.ParseWithClaims(bearerHeader[1], claims, GetTokenKey)
+// 	if err != nil {
+// 		return errors.New("Access Token validation failed")
+// 	}
 
-	// Verify that token is valid
-	if !accessToken.Valid {
-		return errors.New("Access Token not valid")
-	}
-	// Verify issuer
-	if !claims.VerifyIssuer(Configuration.TrustedIssuer, true) {
-		issuer := claims["iss"].(string)
-		return errors.New("Untrusted Issuer '" + issuer + "'")
-	}
-	// Verify audience
-	if !claims.VerifyAudience(Configuration.TrustedIssuer, true) {
-		audience := claims["aud"].(string)
-		return errors.New("Invalid audience '" + audience + "'")
-	}
-	// Verify time validity
-	if err = claims.Valid(); err != nil {
-		return errors.New("Access Token claims are not valid: " + err.Error())
-	}
-	// Verify scope
-	scopes := strings.Split(claims["scopes"].(string), " ")
-	err = ScopesValid(scopes)
-	if err != nil {
-		return errors.New("Access Token is missing Scopes: " + err.Error())
-	}
+// 	// Verify that token is valid
+// 	if !accessToken.Valid {
+// 		return errors.New("Access Token not valid")
+// 	}
+// 	// Verify issuer
+// 	if !claims.VerifyIssuer(Configuration.TrustedIssuer, true) {
+// 		issuer := claims["iss"].(string)
+// 		return errors.New("Untrusted Issuer '" + issuer + "'")
+// 	}
+// 	// Verify audience
+// 	if !claims.VerifyAudience(Configuration.TrustedIssuer, true) {
+// 		audience := claims["aud"].(string)
+// 		return errors.New("Invalid audience '" + audience + "'")
+// 	}
+// 	// Verify time validity
+// 	if err = claims.Valid(); err != nil {
+// 		return errors.New("Access Token claims are not valid: " + err.Error())
+// 	}
+// 	// Verify scope
+// 	scopes := strings.Split(claims["scopes"].(string), " ")
+// 	err = ScopesValid(scopes)
+// 	if err != nil {
+// 		return errors.New("Access Token is missing Scopes: " + err.Error())
+// 	}
 
-	// TODO: Validate rich authorization
+// 	// TODO: Validate rich authorization
 
-	return nil
-}
+// 	return nil
+// }
 
 func DownloadCsr(r *http.Request) (string, error) {
 	// Create CSR Directory if not exists
@@ -129,7 +129,6 @@ func DownloadCsr(r *http.Request) (string, error) {
 func SignCsr(csrPath string, crtPath string) error {
 	// Prepare signing command
 	var signingArgs []string
-
 	for i := 0; i < len(Configuration.SigningArgs); i++ {
 		arg := Configuration.SigningArgs[i]
 		arg = strings.ReplaceAll(arg, "${CSR_FILE}", csrPath)
@@ -163,7 +162,7 @@ func SendCrt(crtPath string, w *http.ResponseWriter) error {
 }
 
 func PostCsr(w http.ResponseWriter, r *http.Request) {
-	// // Validate authorization
+	// Validate authorization -> Done by Reverse Proxy
 	// err := ValidateAuthorization(r)
 	// if err != nil {
 	// 	log.Printf(err.Error())

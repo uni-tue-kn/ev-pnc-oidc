@@ -1,15 +1,18 @@
 openapi: 3.0.3
 info:
   title: eMSP Backend
-  version: 0.0.1
+  version: 0.1.0
 servers:
-- url: http://localhost:8080
-- url: https://emsp.oidcharge.primbs.dev
+  - url: http://localhost:8080
+  - url: https://emsp.oidcharge.primbs.dev
+tags:
+  - name: Certificate Signing Request
+  - description: Endpoints related to the Certificate Signing Request.
 paths:
   /csr:
     post:
       tags:
-      - Certificate Signing Request
+        - Certificate Signing Request
       summary: Posts a Certificate Signing Request
       description: Returns a signed X.509 Certificate
       operationId: postCsr
@@ -78,9 +81,8 @@ paths:
         "500":
           description: Internal server error. Something went wrong.
       security:
-      - csr_auth:
-        - write:pets
-        - read:pets
+        - csr_auth:
+          - ccsr
 components:
   schemas: {}
   securitySchemes:
@@ -92,4 +94,4 @@ components:
           tokenUrl: https://as.emsp.oidcharge.primbs.dev/token
           refreshUrl: https://as.emsp.oidcharge.primbs.dev/refresh
           scopes:
-            csr: Send Certificate Signing Requests
+            ccsr: Send Certificate Signing Requests
