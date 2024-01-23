@@ -16,7 +16,7 @@ RUN  update-ca-certificates
 WORKDIR /app
 COPY --from=build /go/src/server ./server
 COPY ./config ./config
-COPY ./csr.sh ./csr.sh
+COPY ./scripts ./scripts
 RUN mkdir ./output
 
 ENV PORT=8080
