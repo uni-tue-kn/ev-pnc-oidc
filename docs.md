@@ -1,180 +1,141 @@
 # EV PnC Registration Flow
 
-## 1. EV starts Setup
+## 1. Connection Establishment
 
-- The EV starts a Bluetooth LE server which provides a *Bluetooth LE HTTP Proxy Service* identified by a specific `{DEVICE_NAME}`, e.g., `MyEV 1234`, using the [EspruinoHub Software](https://github.com/espruino/EspruinoHub) as described [here](https://www.espruino.com/BLE+HTTP+Proxy).
-- The EV generates a *Connect URL* to its OEM provider's *PnC Setup App*, containing the URL-encoded `{DEVICE_NAME}` and `{REGISTRATION_ENDPOINT}`, e.g., `https://oem-app.pnc.primbs.dev/connect?device_name=MyEV%201234&registration_endpoint=http%3A%2F%2Fev.local%2Fregister`.
-- The EV generates a QR Code which represents the *Connect URL*:
+### 1.1. EV starts Setup
 
-![https://oem-app.pnc.primbs.dev/connect?device=MyEV%201234](src/qrcode_oem-app.pnc.primbs.dev.png)
+- The EV starts a Bluetooth LE server which provides a *Bluetooth LE HTTP Proxy Service* identified by a specific `{DEVICE_NAME}`, e.g., `MyEV`, using the [EspruinoHub Software](https://github.com/espruino/EspruinoHub) as described [here](https://www.espruino.com/BLE+HTTP+Proxy).
+- The EV generates a *Connect URL* to its OEM provider's *PnC Setup App*, containing the URL-encoded `{DEVICE_NAME}` and `{REGISTRATION_ENDPOINT}`, e.g., `https://oem-app.pnc.primbs.dev/connect?device_name=MyEV`.
+- The EV generates a QR Code which represents the *Connect URL*.
 
-## 2. User Agent connects to EV
+### 1.2. Credentials Transfer
 
-- The User starts the camera app on his smartphone (called User Agent) and scans the QR code.
-- The User Agent opens the *Connect URL* in a Chromium-based web browser, e.g., Google Chrome for Android.
-- This loads the OEM provider's *PnC Setup App*, which is an [Angular](https://angular.io/) single page web application.
+- The user starts the camera app on his smartphone and scans the QR code.
+
+### 1.3. User Agent prepares Connection to EV
+
+- The smartphone opens the *Connect URL* in a Chromium-based web browser, e.g., Google Chrome for Android.
+- This loads the [User Agent](./user-agent/README.md) which is an [Angular](https://angular.io/) single page web application.
 - The user than clicks the Connect button.
-- The app then utilizes the [Web Bluetooth API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Bluetooth_API) in the browser to open a popup which shows nearby Bluetooth LE devices filtered by the `{DEVICE_NAME}`.
+- The User Agent then utilizes the [Web Bluetooth API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Bluetooth_API) in the browser to open a popup which shows nearby Bluetooth LE devices filtered by the `{DEVICE_NAME}`.
 - The user then selects his EV and chooses to connect to the device.
-- The app then connects to the EV via Bluetooth LE which establishes an end-to-end encrypted data channel by default.
-- The app then connects to the GATT [HTTP-Proxy-Service](https://www.bluetooth.com/de/specifications/specs/http-proxy-service-1-0/).
 
-## 3. User Agent prepares PnC Registration
+### 1.4. User Agent connects to EV
 
-- In the backend of the EV also runs a *PnC Client Server* which is addressable by the *Bluetooth LE HTTP Proxy Service*.
-- This *PnC Client Server* is an HTTP server written in [Go](https://go.dev/) which provides multiple endpoints.
-- The *PnC Setup App* requests the list of enabled eMSPs from the EV's *PnC Client Server* using the `{EMSP_ENDPOINT}`, e.g., `http://ev.local/emsp`.
-- This list is an enumeration of JSON objects which contain the base URL of the eMSPs' Authorization Server, e.g., `https://sso.emsp1.pnc.primbs.dev/`, and other relevant information.
+- The User Agent then connects to the EV via Bluetooth LE which establishes an end-to-end encrypted data channel by default.
+- The User Agent then connects to the GATT [HTTP-Proxy-Service](https://www.bluetooth.com/de/specifications/specs/http-proxy-service-1-0/).
+
+## 2. Configuration Request
+
+### 2.1. User Agent requests eMSP Configuration
+
+- The User Agent requests a list of supported eMSPs via the BLE HTTP Proxy Service from the EV's `{EMSP_ENDPOINT}`: `http://ev.local/emsp`
+
+### 2.2. EV Backend looks up supported eMSPs
+
+- On the EV runs the [EV Backend Server](./ev-backend/README.md) which is addressable by the Bluetooth LE HTTP Proxy Service.
+- This EV Backend Server is an HTTP server written in [Go](https://go.dev/) which provides multiple endpoints.
+- On the `/emsps` endpoint, the EV Backend responds with a list of EMSP JSON objects which contain the base URL of the eMSPs' Authorization Server, e.g., `https://sso.emsp1.pnc.primbs.dev/`, and other relevant information.
 - Such a list might look like this:
 ```json
 [
   {
-    "base_url": "https://authlete.com",
-    "image": "assets/openid_charge.svg",
-    "name": "OpenID Charge",
-    "client_id": "150558547826224",
     "id": "oidc",
+    "name": "OpenID Charge",
+    "base_url": "https://as.example.com/",
+    "image": "assets/openid_charge.svg",  // Optional
   },
   {
-    "base_url": "http://localhost:8080",
-    "image": "https://upload.wikimedia.org/wikipedia/commons/e/e6/Ionity_logo_cmyk.svg",
-    "name": "Ionity",
-    "client_id": "ionity_ev",
     "id": "ionity",
+    "name": "Ionity",
+    "base_url": "http://localhost:8080",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/e/e6/Ionity_logo_cmyk.svg",  // Optional
   },
 ]
 ```
 - The EV might have this list cached, directly downloaded from the OEM, or hardcoded in its firmware.
-- In the background, the EV knows, which eMSP requires OEM Authentication which means that the EV must send a CCSR signed with the OEM Certificate.
 
-## 4. User selects eMSP
+### 2.3. EV Backend responds with eMSPs
 
-- The app visualizes the eMSP list to the user.
+- The EV responds with the list of eMSPs via the BLE HTTP Proxy Service to the User Agent.
+
+### 2.4. User selects eMSP
+
+- The User Agent visualizes the eMSP list to the user.
 - The user selects his preferred eMSP.
 
-## 5. User adjusts Contract
+## 3. Contract Provisioning Request
 
-- The user adjusts the contract parameters in the web app:
+### 3.1. User modifies Permissions
+
+- The User Agent displays available permissions to the user.
+- The user adjusts the contract parameters in the User Agent:
   - Contract start time (leave empty to start now), e.g., `2023-07-01`
   - Contract end time (leave empty to end in one year), e.g., `2024-07-01`
   - Maximum amount (leave empty for unlimited), e.g., `234.56 €`
   - Maximum transaction amount (leave empty for unlimited), e.g., `100.00 €`
-- The app generates contract details for the Rich Authorization Request:
+
+### 3.2. User Agent sends Contract Provisioning Request to EV Backend
+
+- The User Agent generates contract details for the Rich Authorization Request:
 ```json
 {
-  "locations": [
-    "https://pnc.emsp1.pnc.primbs.dev/authorize"
-  ],
-  "chargingPeriod": {
+  "type": "pnc_contract_request",
+  "charging_period": {
     "start": "2023-07-01T00:00:00.000Z",
     "end": "2024-07-01T00:00:00.000Z"
   },
-  "maximumAmount": {
+  "maximum_amount": {
     "currency": "EUR",
     "amount": "234.56"
   },
-  "maximumTransactionAmount": {
+  "maximum_transaction_amount": {
     "currency": "EUR",
     "amount": "100.00"
   }
 }
 ```
-
-## 6. Request Contract Provisioning
-
-- The *PnC Client Server* also provides a `{REGISTRATION_ENDPOINT}`, e.g., `http://ev.local/register`.
-- The app sends an HTTP request via the HTTP-Proxy-Service through the end-to-end encrypted Bluetooth LE connection to the EV's `{REGISTRATION_ENDPOINT}` to request a PnC registration initialization on the *PnC Client Server*.
-- This request contains these contract details together with the information about the eMSP to the EV:
+- The User Agent sends this contract details together with the selected eMSP and a redirect URI via the BLE GATT Service to the EV Backend as the body of an HTTP POST Request:
 ```json
 {
-  "emsp": {
-    "base_url": "https://sso.emsp1.pnc.primbs.dev/",
-    "requires_oem_authentication": true,
-    "image": "https://emsp1.pnc.primbs.dev/logo.svg",
-    "name": "Privacy eMSP",
-    "client_id": "oem-app",
-    "client_secret": "supersecret!"
-  },
-  "contract": {
-    "locations": [
-      "https://pnc.emsp1.pnc.primbs.dev/authorize"
-    ],
-    "chargingPeriod": {
-      "start": "2023-07-01T00:00:00.000Z",
-      "end": "2024-07-01T00:00:00.000Z"
+  "emsp_id": "oidcharge",
+  "redirect_uri": "https://ua.example.com/redirect",
+  "authorization_details": [
+    {
+      "type": "pnc_contract_request",
+      "charging_period": {
+        "start": "2023-07-01T00:00:00.000Z",
+        "end": "2024-07-01T00:00:00.000Z"
+      },
+      "maximum_amount": {
+        "currency": "EUR",
+        "amount": "234.56"
+      },
+      "maximum_transaction_amount": {
+        "currency": "EUR",
+        "amount": "100.00"
+      }
     },
-    "maximumAmount": {
-      "currency": "EUR",
-      "amount": "234.56"
-    },
-    "maximumTransactionAmount": {
-      "currency": "EUR",
-      "amount": "100.00"
-    }
-  }
+  ],
 }
 ```
+- The EV Backend then performs the Pushed Authorization Request as described in [Section 4](#4-authorization-request).
 
-## 7. EV prepares Token Request
+### 3.3. Pushed Authorization Request
 
-- The *PnC Client Server* generates a new elliptic curve key pair using the P-256 curve.
-  - The private key in JWK format looks like this:
-```json
-{
-  "kty":"EC",
-  "crv":"P-256",
-  "x":"KCbXOs51MGdCVL4o9pfTbcUYpumvR15F01_S0gcasL0",
-  "y":"pk4YQUagTaTRJIX0rMuhEFdqDrzV3H7sHKKm_VK34I4",
-  "d":"hNHvogR7IO7pmrYuzuTHdOcwztaBX4rtdfIXXkqvcSA"
-}
-```
-  - The public key in JWK format looks like this:
-```json
-{
-  "kty":"EC",
-  "crv": "P-256",
-  "x":"KCbXOs51MGdCVL4o9pfTbcUYpumvR15F01_S0gcasL0",
-  "y":"pk4YQUagTaTRJIX0rMuhEFdqDrzV3H7sHKKm_VK34I4"
-}
-```
-- The *PnC Client Server* also generates a random string for PKCE challenge, called Code Verifier.
-- The *PnC Client Server* hashes this Code Verifier with SHA-256. The hash is called Code Challenge.
+TODO
 
-## 8. EV generates Contract Certificate Request Token
+#### 3.3.1. Prepare Proof Key for Code Exchange
 
-- The *PnC Client Server* uses the contract details from the app to create the authorization request parameters for an [OAuth 2.0 Rich Authorization Request (RAR)](https://datatracker.ietf.org/doc/html/rfc9396) which also contain the EV's ID (`evId`) provided by the OEM in the OEM Manufacturer Certificate:
-```json
-[
-  {
-    "type": "ev_information",
-    "locations": [
-      "https://pnc.emsp1.pnc.primbs.dev/authorize"
-    ],
-    "actions": [
-      "authorize",
-      "cancel"
-    ],
-    "chargingPeriod": {
-      "start": "2023-07-01T00:00:00.000Z",
-      "end": "2024-07-01T00:00:00.000Z"
-    },
-    "maximumAmount": {
-      "currency": "EUR",
-      "amount": "234.56"
-    },
-    "maximumTransactionAmount": {
-      "currency": "EUR",
-      "amount": "100.00"
-    },
-    "evId":"uw3nT48bnt"
-  }
-]
-```
+TODO
 
-## 9. EV sends Request to eMSP
+#### 3.3.2. Send Pushed Authorization Request
 
-- The *PnC Client Server* sends this RAR as an [OAuth 2.0 Pushed Authorization Request (PAR)](https://datatracker.ietf.org/doc/rfc9126/) to the eMSP's AS.
-- The PAR looks like this:
+TODO
+
+#### 3.3.3. Register PAR
+
+TODO
 ```http
 POST /par/request HTTP/1.1
 Content-Type: application/x-www-form-urlencoded
@@ -185,49 +146,70 @@ client_secret=supersecret%21&
 redirect_uri=https%3A%2F%2Foem-app.pnc.primbs.dev%2Fauthorize&
 code_challenge=nUg2hWlS95kZ1qT8H6RbLljkD1txlP11LyKh-u3j5pE&
 code_challenge_method=S256&
-scope=pnc_authorize&
+scope=ccsr&
 authorization_details=%7B%22start%22%3A%222023-07-01T00%3A00%3A00.000Z%22%2C%22end%22%3A%222024-07-01T00%3A00%3A00.000Z%22%7D%2C%22maximumAmount%22%3A%7B%22currency%22%3A%22EUR%22%2C%22amount%22%3A%22123.45%22%7D%2C%22evId%22%3A%22uw3nT48bnt%22%7D%5D
 ```
 
-## 10. eMSP responds with Request URI
+#### 3.3.4. Send Pushed Authorization Response
 
-- The eMSP's Authorization Server validates the request and generates a `request_uri`.
-- The response body to the app looks like this:
+TODO
 ```json
 {
   "request_uri": "urn:ietf:params:oauth:request_uri:94220043-b417-4ab4-a913-afc4dd1cc87a",
-  "expires_in": 60
+  "expires_in": 300
 }
 ```
 
-## 11. EV responds to User Agent with Request URI
+### 3.4. User Agent gets Contract Provisioning Response from EV Backend
 
-- The EV responds to the User Agent via BLE with the received `request_uri`.
+- The EV Backend responds to the User Agent via Bluetooth with the Contract Provisioning Response:
+```json
+{
+  "request_uri": "urn:example:bwc4JK-ESC0w8acc191e-Y1LTC2",
+  "client_id": "oidcharge",
+  "state": "OacnSace5b"
+}
+```
 
-## 12. User Agent start Authorization Request
+## 4 Authorization Request
 
-- The User Agent navigates the user to the eMSP's Authorization Server's Authorization Endpoint `https://sso.emsp1.pnc.primbs.dev/authorize?client_id=oem-app&request_uri=urn:ietf:params:oauth:request_uri:94220043-b417-4ab4-a913-afc4dd1cc87a`.
+### 4.1. Send Authorization Request
 
-## 13. eMSP's AS authenticates User
+- The User Agent discovers the Authorization Endpoint from the Authorization Server's well-known endpoint.
+- The User Agent opens a new tab to the Authorization Endpoint and adds the `request_uri` and `client_id` obtained from the EV.
+- The URL might look like this: `https://sso.emsp1.pnc.primbs.dev/authorize?client_id=oem-app&request_uri=urn:ietf:params:oauth:request_uri:94220043-b417-4ab4-a913-afc4dd1cc87a`
 
-- The user enters his credentials to login.
+### 4.2. User Sign In
 
-## 14. User authorizes the Charging Contract
+- In the new tab, the user authenticates with its credentials or with an active session.
 
-- The user will be asked to authorize the User Agent for the requested `pnc_authorize` scope, and to check the contract details.
-- The user thereby must verify that the `evId` matches the ID of the EV which is displayed on the infotainment screen of the EV.
+### 4.3. Client Authorization
 
-## 15. Authorization Response
+- The Authorization Server displays the authorization details to the user.
+- The user carefully checks whether the authorization details match the expected ones.
+- The user authorizes the authorization details.
 
-- If the contract was granted by the user, the Authorization Server redirects the user to the User Agent with an authorization code as query parameter `code`: `https://oem-app.pnc.primbs.dev/authorize?code=b0d93df4-cc6c-49e3-8388-f30332b4b497`.
+### 4.4. Send Authorization Response
 
-## 16. User Agent forwards Authorization Code to EV
+- The Authorization Server redirects the user to the Redirect URI from the Pushed Authorization Request.
+- This request contains the authorization code in the `code` Query Parameter: `https://oem-app.pnc.primbs.dev/authorize?code=b0d93df4-cc6c-49e3-8388-f30332b4b497`
 
-- The User Agent takes the Authorization Code and sends it via BLE to the EV.
+## 5. Request a Contract Certificate
 
-## 17. Token Request
+### 5.1. User Agent sends a Confirmation Request to the EV Backend
 
-- The EV uses the Authorization Code and the Code Verifier to request an Access Token using an XHR Request in background:
+- The User Agent sends a HTTP POST Request via BLE to the EV Backend.
+- This Request contains the authorization code from the Authorization Server as `auth_code` parameter and the state identifier as `state` parameter.
+
+### 5.2. EV Backend performs Token Request
+
+- The User Agent discovers the Token Endpoint from the Authorization Server's well-known endpoint.
+
+#### 5.2.1. EV Backend sends Token Request to Authorization Server
+
+- The User Agent sends a Token Request to the Authorization Server.
+- This request contains the Authorization Code from the User Agent as `code` parameter, the Client ID as `client_id` parameter, the Client Secret as `client_secret` parameter, the value `authorization_code` as `grant_type`, the Redirect URI from the User Agent as `redirect_uri` parameter, and the Proof Key as `code_verifier`.
+
 ```http
 POST /token HTTP/1.1
 Content-Type: application/x-www-form-urlencoded
@@ -240,30 +222,37 @@ client_id=oem-app&
 client_secret=supersecret!
 ```
 
-## 18. Token Response
+#### 5.2.2. Authorization Server verifies Request and Issues Access Token
 
-- The eMSP's AS verifies the Token Request.
-- If valid, the eMSP's AS responds with an Access Token.
-- This Access Token authorizes its possessor to request a Contract Certificate for the granted device ID.
+- The Authorization Server validates the request parameters.
+- If valid, the Authorization Server issues an Access Token which contains the authorized scopes and authorization details.
 
-## 19. EV prepares Contract Certificate Signing Request (CCSR)
+#### 5.2.3. Authorization Server responds with Access Token
 
-- The EV prepares a CCSR and signs it with its EC private key to prove its possession.
-- If required by the eMSP, the EV also signs it with its OEM Manufacturer Certificate.
+- The Authorization Server sends the Access Token as `access_token` parameter to the EV in the HTTP POST body.
 
-## 20. EV requests Contract Certificate
+### 5.3. Contract Certificate Request
 
-- The EV directly sends the CCSR to the `{CONTRACT_CERTIFICATE_ENDPOINT}` of the eMSP, e.g., `https://cc.emsp1.pnc.primbs.dev/csr`.
-- The EV uses the obtained Access Token as Bearer Token in the `Authorization` header.
+#### 5.3.1. EV generates a Contract Certificate Signing Request
 
-## 21. eMSP issues Contract Certificate
+- The EV uses the OpenSSL CLI to generate a new asymmetric key pair.
+- The EV uses the OpenSSL CLI to create a certificate signing request for the Contract Certificate
 
-- The eMSP verifies the Access Token and that the EV ID matches the `evId` parameter in the Access Token.
-- The eMSP verifies the validity of the CCSR.
-- If both are valid, the eMSP generates a Contract Certificate and signs it with its private key.
-- The eMSP responds to the EV with the signed CC.
+#### 5.3.2. EV sends Contract Certificate to eMSP Backend
 
-## 22. EV notifies User
+- The EV sends the Contract Certificate Signing Request to the [eMSP Backend](./emsp-backend/README.md).
+- To prove authorization, the EV adds the Access Token as `bearer` token to the `Authorization` header.
+- The Body of the HTTP POST Request is PEM encoded and of content type `application/pkcs10`.
 
-- If the request was successful and the EV obtained the CC, the EV responds to the User Agent with `200 OK`.
-- The EV also displays a successful CC Registration on the infotainment screen.
+#### 5.3.3. eMSP Backend validates Access Token and CSR
+
+- The Reverse Proxy validates the Authorization Header of the Contract Certificate Request.
+- If the Access Token is valid, the Reverse Proxy forwards the Request to the eMSP Backend.
+- The eMSP Backend downloads the CSR from request body.
+- The eMSP Backend uses the OpenSSL CLI to sign the contract certificate.
+
+#### 5.3.4. eMSP Backend sends Contract Certificate to EV
+
+- After generating the Contract Certificate, the eMSP Backend reads the certificate file.
+- The eMSP Backend then sends the Contract Certificate PEM encoded of content type `application/x-x509-user-cert` back to the eMSP in the POST response body.
+- The EV Backend writes this contract certificate to the `OUTPUT_FILE` (from environment).
