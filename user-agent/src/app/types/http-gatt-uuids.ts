@@ -1,7 +1,11 @@
+// Services:
+
 /**
  * UUID of HTTP Proxy GATT Service.
  */
 export const HPS_SERVICE_UUID = '00001823-0000-1000-8000-00805f9b34fb';
+
+// Characteristics:
 
 /**
  * UUID of HTTP URI GATT Characteristic.

@@ -9,6 +9,7 @@ import { CurrencyAmount } from '../../types/currency-amount.class';
 import { EMSP } from '../../types/emsp.interface';
 import { Ev } from '../../types/ev.class';
 import { EvAuthorizationDetail } from '../../types/ev-authorization-detail.class';
+import { IEvAuthorizationDetail } from '../../types/ev-authorization-detail.interface';
 
 @Component({
   selector: 'app-connect',
@@ -88,7 +89,7 @@ export class ConnectComponent implements OnInit {
   private getEvNameFromRoute(): Promise<string | undefined> {
     return new Promise<string>((resolve) => {
       this.activatedRoute.queryParams.subscribe((params) => {
-        resolve(params['name'] ?? undefined);
+        resolve(params['device_name'] ?? undefined);
       });
     });
   }
@@ -110,6 +111,8 @@ export class ConnectComponent implements OnInit {
     try {
       // Connect to EV.
       const ev = await this.evService.connect(name);
+      // Mark EV as connected.
+      this.connectedEv = ev;
       // Update connected value.
       this.connectEvFormGroup.controls.connected.setValue(true);
 
@@ -117,12 +120,19 @@ export class ConnectComponent implements OnInit {
       await this.emspService.updateEmsps(ev);
       // List available eMSPs.
       this.availableEmsps = [...this.emspService.getEmsps()];
-
-      // // Mark EV as connected.
-      // this.connectedEv = ev;
     } catch (e) {
       // Log error.
       console.error('Failed to connect to EV!', e);
+
+      // Cleanup.
+      if (this.connectedEv !== undefined) {
+        // Disconnect if connected.
+        this.connectedEv.disconnect();
+      }
+      this.connectedEv = undefined;
+      this.connectEvFormGroup.controls.connected.setValue(false);
+      this.emspService.clearEmsps();
+      this.availableEmsps = undefined;
 
       // Display error.
       if (e instanceof Error) {
@@ -139,7 +149,7 @@ export class ConnectComponent implements OnInit {
   // Select eMSP step:
 
   /**
-   * Array of avaialable eMSPs.
+   * Array of available eMSPs.
    */
   public availableEmsps?: EMSP[];
 
@@ -182,6 +192,9 @@ export class ConnectComponent implements OnInit {
       // Log error.
       console.error('Failed to select eMSP!', e);
 
+      // Cleanup.
+      this.selectedEmsp = undefined;
+
       // Display error.
       if (e instanceof Error) {
         this.selectEmspError = e.message;
@@ -191,7 +204,7 @@ export class ConnectComponent implements OnInit {
     }
   }
 
-  // Options step:
+  // Contract Provisioning step:
 
   /**
    * Whether the app is authorizing to eMSP.
@@ -199,9 +212,9 @@ export class ConnectComponent implements OnInit {
   public isAuthorizingEmsp: boolean = false;
 
   /**
-   * Whether the app is waiting for EV's authorization response.
+   * Whether the app is waiting for a contract provisioning response.
    */
-  public waitForEvAuthorizationRequest: boolean = false;
+  public waitForContractProvisioningResponse: boolean = false;
 
   /**
    * Whether the app is waiting for user authorization.
@@ -232,20 +245,15 @@ export class ConnectComponent implements OnInit {
    * Parses the authorization options from the form.
    * @returns Parsed authorization options.
    */
-  private getAuthorizationDetails(): EvAuthorizationDetail[] {
-    return [
-      new EvAuthorizationDetail(
-        ['contract_provisioning'],
-        // TODO: Update Resource Server:
-        ['https://rs.example.com'],
-        {
-          start: this.authorizationOptionsFormGroup.controls.chargingPeriodStart.value!,
-          end: this.authorizationOptionsFormGroup.controls.chargingPeriodEnd.value!,
-        },
-        new CurrencyAmount(this.authorizationOptionsFormGroup.controls.maximumAmount.value!, 'USD'),
-        new CurrencyAmount(this.authorizationOptionsFormGroup.controls.maximumTransactionAmount.value!, 'USD'),
-      ),
-    ];
+  private getAuthorizationDetails(): IEvAuthorizationDetail {
+    return new EvAuthorizationDetail(
+      {
+        start: this.authorizationOptionsFormGroup.controls.chargingPeriodStart.value!,
+        end: this.authorizationOptionsFormGroup.controls.chargingPeriodEnd.value!,
+      },
+      new CurrencyAmount(this.authorizationOptionsFormGroup.controls.maximumAmount.value!, 'USD'),
+      new CurrencyAmount(this.authorizationOptionsFormGroup.controls.maximumTransactionAmount.value!, 'USD'),
+    ).toJson();
   }
 
   /**
@@ -259,7 +267,7 @@ export class ConnectComponent implements OnInit {
     this.isAuthorizingEmsp = true;
 
     // Clear other state notifications.
-    this.waitForEvAuthorizationRequest = false;
+    this.waitForContractProvisioningResponse = false;
     this.waitForUserAuthorization = false;
     this.waitForEvAuthorizationResponse = false;
 
@@ -273,35 +281,37 @@ export class ConnectComponent implements OnInit {
         throw new Error('No EV connected!');
       }
 
-      // Generate Authorization Options.
-      const authorizationOptions = this.getAuthorizationDetails();
-      this.waitForEvAuthorizationRequest = true;
-      // Request Authorization URI form EV.
-      const authorizationResponse = await this.connectedEv.requestAuthorizationUri(
+      // Send Contract Provisioning Request and wait for response.
+      this.waitForContractProvisioningResponse = true;
+      const contractProvisioningResponse = await this.connectedEv.requestContractProvisioning(
         this.selectedEmsp,
-        authorizationOptions.map((option) => option.toJson()),
+        this.getAuthorizationDetails(),
       );
-      this.waitForEvAuthorizationRequest = false;
+      this.waitForContractProvisioningResponse = false;
 
+      // Send Authorization Request.
       this.waitForUserAuthorization = true;
-      // Request PAR Endpoint.
+      // Get Authorization Endpoint
       const discoveryDocument = await this.authService.getDiscoveryDocument(this.selectedEmsp.base_url);
-      const parEndpoint = discoveryDocument.pushed_authorization_request_endpoint;
-      if (!parEndpoint) {
-        throw new Error('PAR not supported!');
+      const authorizationEndpoint = discoveryDocument.authorization_endpoint;
+      if (!authorizationEndpoint) {
+        throw new Error('Authorization Endpoint is not provided!');
       }
-      // Send Pushed Authorization Request to eMSP.
+      // Redirect user to Authorization Endpoint in a new tab and wait for authorization.
       const authorizationCode = await this.authService.authorize(
-        parEndpoint,
-        authorizationResponse.state,
-        authorizationResponse.request_uri,
-        this.selectedEmsp.client_id,
+        authorizationEndpoint,
+        contractProvisioningResponse.state,
+        contractProvisioningResponse.request_uri,
+        contractProvisioningResponse.client_id,
       );
       this.waitForUserAuthorization = false;
 
+      // Forward authorization code to EV and await success message.
       this.waitForEvAuthorizationResponse = true;
-      // Forward authorization code to EV and await response.
-      await this.connectedEv.sendAuthorizationCode(authorizationCode, authorizationResponse.state);
+      await this.connectedEv.sendConfirmationRequest(
+        authorizationCode,
+        contractProvisioningResponse.state,
+      );
       this.waitForEvAuthorizationResponse = false;
     } catch (e) {
       // Log error.
@@ -315,7 +325,7 @@ export class ConnectComponent implements OnInit {
       }
     } finally {
       this.isAuthorizingEmsp = false;
-      this.waitForEvAuthorizationRequest = false;
+      this.waitForContractProvisioningResponse = false;
       this.waitForUserAuthorization = false;
       this.waitForEvAuthorizationResponse = false;
     }

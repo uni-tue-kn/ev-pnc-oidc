@@ -37,16 +37,16 @@ export class AuthService {
 
   /**
    * Performs a Pushed Authorization Request (PAR) and resolves with the obtained authorization code.
-   * @param parEndpoint Pushed Authorization Request (PAR) endpoint.
+   * @param authorizationEndpoint Pushed Authorization Request (PAR) endpoint.
    * @param state Authorization Request state id.
    * @param requestUri Request URI.
    * @param clientId Client ID.
    * @param timeout Authorization timeout.
    * @returns Authorization Code.
    */
-  public async authorize(parEndpoint: string, state: string, requestUri: string, clientId: string, timeout: number = 600000): Promise<string> {
+  public async authorize(authorizationEndpoint: string, state: string, requestUri: string, clientId: string, timeout: number = 600000): Promise<string> {
     // Build authorization URL.
-    const authorizationUrl = new URL(parEndpoint);
+    const authorizationUrl = new URL(authorizationEndpoint);
     authorizationUrl.searchParams.append('client_id', clientId);
     authorizationUrl.searchParams.append('request_uri', requestUri);
 

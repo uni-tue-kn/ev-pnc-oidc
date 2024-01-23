@@ -2,6 +2,7 @@ import { Currencies } from './currencies.enum';
 import { ICurrencyAmount } from './currency_amount.interface';
 
 export class CurrencyAmount {
+
   /**
    * Constructs a new Currency Amount.
    * @param amount Amount of money.

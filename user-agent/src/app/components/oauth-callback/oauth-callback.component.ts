@@ -9,6 +9,10 @@ import { AuthService } from '../../services/auth/auth.service';
 })
 export class OauthCallbackComponent implements OnInit {
 
+  /**
+   * OAuth Authorization Callback Page.
+   * @param authService Authorization Service.
+   */
   constructor(
     private readonly authService: AuthService,
   ) {}

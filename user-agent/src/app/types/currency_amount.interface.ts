@@ -1,6 +1,7 @@
 import { Currencies } from './currencies.enum';
 
 export interface ICurrencyAmount {
+
   /**
    * Amount of money.
    */

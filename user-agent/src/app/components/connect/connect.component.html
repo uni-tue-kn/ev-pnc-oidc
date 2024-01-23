@@ -131,7 +131,7 @@
     </div>
 
     <!-- Authorization tab info: -->
-    <div *ngIf="waitForEvAuthorizationRequest">
+    <div *ngIf="waitForContractProvisioningResponse">
       <span>Waiting for Authorization URI from EV ...</span>
     </div>
 
@@ -145,6 +145,7 @@
       <span>Waiting for authorization response from EV ...</span>
     </div>
 
+    <!-- Finished: -->
     <div *ngIf="!isAuthorizingEmsp">
       <span>EV is successfully authorized</span>
     </div>

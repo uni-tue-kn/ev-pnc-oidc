@@ -1,21 +1,11 @@
 import { ICurrencyAmount } from './currency_amount.interface';
 
 export interface IEvAuthorizationDetail {
-  
+
   /**
    * Type of the authorization detail.
    */
   type: 'pnc_contract_request';
-
-  /**
-   * List of actions that can be performed with the token.
-   */
-  actions: string[];
-
-  /**
-   * List of Resource Server that the Token is valid on.
-   */
-  locations: string[];
 
   /**
    * Charging period.

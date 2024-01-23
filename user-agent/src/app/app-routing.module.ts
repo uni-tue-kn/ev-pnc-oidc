@@ -5,7 +5,10 @@ import { ConnectComponent } from './components/connect/connect.component';
 import { HomeComponent } from './components/home/home.component';
 import { OauthCallbackComponent } from './components/oauth-callback/oauth-callback.component';
 
-export const OAUTH_REDIRECT_URI_PATH = 'authorization_callback';
+/**
+ * URI Path of redirect URI.
+ */
+export const OAUTH_REDIRECT_URI_PATH = 'redirect';
 
 const routes: Routes = [
   { path: '', component: HomeComponent },

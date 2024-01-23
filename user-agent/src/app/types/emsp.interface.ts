@@ -1,4 +1,15 @@
 export interface EMSP {
+
+  /**
+   * Unique eMSP ID.
+   */
+  id: string;
+
+  /**
+   * Name of eMSP.
+   */
+  name: string;
+
   /**
    * Base URL of Authorization Server.
    */
@@ -8,19 +19,4 @@ export interface EMSP {
    * Image URL.
    */
   image?: string;
-
-  /**
-   * Name of eMSP.
-   */
-  name: string;
-
-  /**
-   * OAuth Client ID.
-   */
-  client_id: string;
-
-  /**
-   * Unique eMSP ID.
-   */
-  id: string;
 }

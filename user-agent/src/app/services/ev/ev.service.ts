@@ -20,7 +20,7 @@ export class EvService {
   /**
    * Connects to an EV.
    * @param name Name of EV to connect to.
-   * @returns 
+   * @returns Connected EV instance.
    */
   async connect(name: string): Promise<Ev> {
     try {

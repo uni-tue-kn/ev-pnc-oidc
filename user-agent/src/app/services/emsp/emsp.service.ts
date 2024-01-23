@@ -57,4 +57,11 @@ export class EmspService {
       this.availableEmsps[emsp.id] = emsp;
     }
   }
+
+  /**
+   * Clears the list of eMSPs.
+   */
+  public clearEmsps(): void {
+    this.availableEmsps = {};
+  }
 }
