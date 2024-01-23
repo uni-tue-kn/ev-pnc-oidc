@@ -47,23 +47,9 @@ func Index(w http.ResponseWriter, r *http.Request) {
 var routes = Routes{
 	Route{
 		"Index",
-		"GET",
+		strings.ToUpper("Get"),
 		"/",
 		Index,
-	},
-
-	Route{
-		"FinishAuthorizationFlow",
-		strings.ToUpper("Post"),
-		"/authorize",
-		FinishAuthorizationFlow,
-	},
-
-	Route{
-		"InitializeAuthorizationFlow",
-		strings.ToUpper("Post"),
-		"/initialize",
-		InitializeAuthorizationFlow,
 	},
 
 	Route{
@@ -71,5 +57,19 @@ var routes = Routes{
 		strings.ToUpper("Get"),
 		"/emsps",
 		GetEmsps,
+	},
+
+	Route{
+		"RequestContractProvisioning",
+		strings.ToUpper("Post"),
+		"/cpr",
+		RequestContractProvisioning,
+	},
+
+	Route{
+		"ConfirmAuthorization",
+		strings.ToUpper("Post"),
+		"/confirm",
+		ConfirmAuthorization,
 	},
 }

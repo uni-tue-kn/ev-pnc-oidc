@@ -13,7 +13,5 @@ type Emsp struct {
 
 	BaseUrl string `json:"base_url"`
 
-	ClientId string `json:"client_id"`
-
 	Image string `json:"image,omitempty"`
 }

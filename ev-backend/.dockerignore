@@ -1,0 +1,8 @@
+.env
+.swagger-codegen-ignore
+go.sum
+README.md
+Dockerfile
+output/
+.vscode/
+.swagger-codegen/

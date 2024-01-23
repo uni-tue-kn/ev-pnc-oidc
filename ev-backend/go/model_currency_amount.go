@@ -6,6 +6,11 @@
  */
 package ev_backend
 
+const (
+	EUR string = "EUR"
+	USD        = "USD"
+)
+
 type CurrencyAmount struct {
 	Amount string `json:"amount"`
 

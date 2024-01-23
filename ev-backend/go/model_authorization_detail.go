@@ -7,9 +7,15 @@
 package ev_backend
 
 type AuthorizationDetail struct {
-	ChargingPeriod *AuthorizationOptionsChargingPeriod `json:"chargingPeriod,omitempty"`
+	Type string `json:"type"`
 
-	MaximumAmount *CurrencyAmount `json:"maximumAmount,omitempty"`
+	Actions []string `json:"actions"`
 
-	MaximumTransactionAmount *CurrencyAmount `json:"maximumTransactionAmount,omitempty"`
+	Locations []string `json:"locations"`
+
+	ChargingPeriod *ChargingPeriod `json:"charging_period"`
+
+	MaximumAmount *CurrencyAmount `json:"maximum_amount"`
+
+	MaximumTransactionAmount *CurrencyAmount `json:"maximum_transaction_amount"`
 }

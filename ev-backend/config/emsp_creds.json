@@ -1,0 +1,10 @@
+{
+  "oidcharge": {
+    "client_id": "oidcharge",
+    "client_secret": "FtdQfL1xDkmMlTvqqWzT34OMBOMaHkvQu9VPkb3GL9Fou6qkgv8uDQtAUdp1wlLLkC0-59F0gVYrC6EKsywk0Q"
+  },
+  "ionity": {
+    "client_id": "ionity",
+    "client_secret": "ionity_ev_secret"
+  }
+}

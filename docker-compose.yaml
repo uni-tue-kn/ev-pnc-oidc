@@ -126,8 +126,6 @@ services:
     environment:
       - CSR_ENDPOINT=http://emsp-backend
       - OUTPUT_FILE=/output/cc.cer
-      - API_KEY=${API_KEY}
-      - API_SECRET=${API_SECRET}
     volumes:
       - cc_output:/output
       - ./ev-backend/config:/app/config

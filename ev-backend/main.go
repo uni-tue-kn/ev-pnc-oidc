@@ -17,7 +17,8 @@ import (
 func main() {
 	log.Printf("Loading eMSPs ...")
 	var err error
-	ev_backend.ClientSecrets, err = ev_backend.ReadClientSecrets("./config/emsp_secrets.json")
+	err = ev_backend.LoadEmspResourceEps("./config/emsp_resource_ep.json")
+	err = ev_backend.LoadClientCredentials("./config/emsp_creds.json")
 	ev_backend.Emsps, err = ev_backend.ReadEmsps("./config/emsp.json")
 	if err != nil {
 		panic("Failed to load eMSPs from ./config/emsp.json")

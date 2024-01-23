@@ -20,14 +20,12 @@ import (
 	"os/exec"
 	"strings"
 	"time"
-	// "github.com/authlete/authlete-go/api"
-	// "github.com/authlete/authlete-go/conf"
-	// "github.com/authlete/authlete-go/dto"
 )
 
 type Session struct {
 	PkceVerifier string
 	EmspId       string
+	RedirectUri  string
 }
 
 var sessions = make(map[string]Session)
@@ -35,6 +33,8 @@ var sessions = make(map[string]Session)
 var randomCharSet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 
 var pkceChallengeCharSet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._~"
+
+var emspResources map[string]string
 
 func GenerateRandomString(length int, charset string) string {
 	random := rand.New(rand.NewSource(time.Now().UnixNano()))
@@ -47,6 +47,7 @@ func GenerateRandomString(length int, charset string) string {
 }
 
 func GetEmsp(id string) *Emsp {
+	// Search in Emsps for eMSP with matching id.
 	for _, emsp := range Emsps {
 		if emsp.Id == id {
 			return &emsp
@@ -88,9 +89,6 @@ func GetPkce() (string, string, error) {
 
 	// Encode Verifier to ASCII
 	asciiEncodedVerifier := []byte(pkceVerifier)
-	//  make([]byte, 128)
-	// sEnc := b64. b64.StdEncoding.EncodeToString([]byte(pkceVerifier))
-	// ascii85.Encode(asciiEncodedVerifier, []byte(pkceVerifier))
 
 	// Generate SHA-256 hash from ASCII-encoded verifier
 	hash := sha256.New()
@@ -106,31 +104,26 @@ func GetPkce() (string, string, error) {
 	return pkceVerifier, pkceChallenge, nil
 }
 
-// func CreateAuthleteConfiguration() conf.AuthleteConfiguration {
-// 	apiKey := os.Getenv("API_KEY")
-// 	apiSecret := os.Getenv("API_SECRET")
-// 	cnf := conf.AuthleteSimpleConfiguration{}
-// 	cnf.SetBaseUrl("https://api.authlete.com/")
-// 	cnf.SetServiceApiKey(apiKey)
-// 	cnf.SetServiceApiSecret(apiSecret)
-
-// 	return &cnf
-// }
-
-func InitializeAuthorizationFlow(w http.ResponseWriter, r *http.Request) {
-	// Parse Authorization Request body
-	var authorizationRequest AuthorizationRequest
-	err := json.NewDecoder(r.Body).Decode(&authorizationRequest)
+func RequestContractProvisioning(w http.ResponseWriter, r *http.Request) {
+	// Parse Contract Provisioning Request body
+	var cpr ContractProvisioningRequest
+	err := json.NewDecoder(r.Body).Decode(&cpr)
 	if err != nil {
-		log.Printf("Failed to parse AuthorizationRequest")
+		log.Printf("Failed to parse ContractProvisioningRequest")
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
 	// Search for eMSP with requested ID
-	emsp := GetEmsp(authorizationRequest.EmspId)
+	emsp := GetEmsp(cpr.EmspId)
 	if emsp == nil {
-		log.Printf("Unknown eMSP with ID \"" + authorizationRequest.EmspId + "\"")
+		log.Printf("Unknown eMSP with ID \"" + cpr.EmspId + "\"")
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+	emspCreds := GetEmspCredential(emsp.Id)
+	if emspCreds == nil {
+		log.Printf("Unknown eMSP Credentials with ID \"" + emsp.Id + "\"")
 		w.WriteHeader(http.StatusNotFound)
 		return
 	}
@@ -142,7 +135,6 @@ func InitializeAuthorizationFlow(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-
 	// Get PAR endpoint from discovery document
 	parEndpoint, found := discoveryDocument["pushed_authorization_request_endpoint"].(string)
 	if !found {
@@ -150,10 +142,6 @@ func InitializeAuthorizationFlow(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	// parEndpoint := "https://api.authlete.com/api/pushed_auth_req"
-
-	// cnf := CreateAuthleteConfiguration()
-	// api := api.New(cnf)
 
 	// Prepare PKCE
 	pkceVerifier, pkceChallenge, err := GetPkce()
@@ -168,56 +156,57 @@ func InitializeAuthorizationFlow(w http.ResponseWriter, r *http.Request) {
 	sessions[sessionId] = Session{
 		PkceVerifier: pkceVerifier,
 		EmspId:       emsp.Id,
+		RedirectUri:  cpr.RedirectUri,
+	}
+
+	// Get resource server endpoint URL
+	resourceEp, found := emspResources[emspCreds.ClientId]
+	if !found {
+		log.Printf("Resource Endpoint not found for client with ID \"" + emspCreds.ClientId + "\"")
+		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
 
 	// Encode authorization details:
-	authorizationDetails, err := json.Marshal(
-		[1]AuthorizationDetail{
-			*authorizationRequest.Detail,
-		},
-	)
+	var authorizationDetailJson map[string]interface{}
+	authorizationDetailJson["type"] = "pnc_contract_request"
+	authorizationDetailJson["actions"] = [1]string{
+		"contract_provisioning",
+	}
+	authorizationDetailJson["locations"] = [1]string{resourceEp}
+	authorizationDetailJson["charging_period"] = *cpr.AuthorizationDetail.ChargingPeriod
+	authorizationDetailJson["maximum_amount"] = *cpr.AuthorizationDetail.MaximumAmount
+	authorizationDetailJson["maximum_transaction_amount"] = *cpr.AuthorizationDetail.MaximumTransactionAmount
+	var authorizationDetailsJson [1]map[string]interface{}
+	authorizationDetailsJson[0] = authorizationDetailJson
+	authorizationDetails, err := json.Marshal(authorizationDetailsJson)
 	if err != nil {
 		log.Printf("Failed to serialize authorization details")
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	// Get Client Secret
-	clientSecret, found := ClientSecrets[emsp.Id]
-	if !found {
-		log.Printf("Client Secret for Client ID \"" + emsp.ClientId + "\" not found")
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-	// Prepare body parameters
+	// Prepare body parameters for PAR
 	bodyParameters := url.Values{}
 	// OAuth Authorization parameters according to RFC 6749:
 	bodyParameters.Set("response_type", "code")
-	bodyParameters.Set("client_id", emsp.ClientId)
-	bodyParameters.Set("redirect_uri", clientSecret.RedirectUri)
+	bodyParameters.Set("redirect_uri", cpr.RedirectUri)
 	bodyParameters.Set("scope", "pnc")
+	bodyParameters.Set("client_id", emspCreds.ClientId)
 	bodyParameters.Set("state", sessionId)
 	// PKCE parameters according to RFC 7636:
 	bodyParameters.Set("code_challenge", pkceChallenge)
 	bodyParameters.Set("code_challenge_method", "S256")
 	// RAR parameters according to RFC 9396:
-	bodyParameters.Set("authorization_details", string(authorizationDetails))
+	bodyParameters.Set("authorization_details", url.QueryEscape(string(authorizationDetails)))
 
 	// Encode body parameters to string
 	bodyString := bodyParameters.Encode()
 
-	log.Printf("%q", bodyString)
+	log.Printf("Sending pushed authorization request with body \"%q\"", bodyString)
 
-	// parBody := dto.PushedAuthReqRequest{
-	// 	ClientId:     emsp.ClientId,
-	// 	ClientSecret: ClientSecrets[emsp.ClientId].Secret,
-	// 	Parameters:   bodyString,
-	// }
-	// parResponse, err := api.PushAuthorizationRequest(&parBody)
-	// // Send Pushed Authorization Request to Authorization Endpoint.
+	// Send PAR
 	parResponse, err := http.Post(parEndpoint, "application/x-www-form-urlencoded", strings.NewReader(bodyString))
-	// request, err := http.NewRequest("POST", parEndpoint, strings.NewReader(bodyString))
 	if err != nil {
 		log.Printf("Failed to send Pushed Authorization Request: " + err.Error())
 		w.WriteHeader(http.StatusInternalServerError)
@@ -243,9 +232,10 @@ func InitializeAuthorizationFlow(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Create and serialize response
-	result := AuthorizationResponse{
+	result := ContractProvisioningResponse{
+		RequestUri: responseBody.RequestUri,
+		ClientId:   emspCreds.ClientId,
 		State:      sessionId,
-		RequestUri: responseBody.RequestUri, //parResponse.RequestUri,
 	}
 	resultData, err := json.Marshal(result)
 	if err != nil {
@@ -267,73 +257,63 @@ func InitializeAuthorizationFlow(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 }
 
-type ClientSecret struct {
-	Secret      string `json:"secret"`
-	RedirectUri string `json:"redirect_uri"`
-}
-
-func ReadClientSecrets(file string) (map[string]ClientSecret, error) {
-	// Read emsp file and return 500 response if failed
+func LoadEmspResourceEps(file string) error {
+	// Read emsp resource endpoint file
 	data, err := os.ReadFile(file)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	// JSON serialize emsps array
-	var clientSecrets map[string]ClientSecret
-	err = json.Unmarshal(data, &clientSecrets)
+	// JSON serialize values
+	err = json.Unmarshal(data, &emspResources)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	return clientSecrets, nil
+	return nil
 }
 
-var ClientSecrets map[string]ClientSecret
-
-func FinishAuthorizationFlow(w http.ResponseWriter, r *http.Request) {
-	// Parse Finish Authorization Request body
-	var authorizationRequest FinishAuthorizationRequest
-	err := json.NewDecoder(r.Body).Decode(&authorizationRequest)
+func ConfirmAuthorization(w http.ResponseWriter, r *http.Request) {
+	// Parse Confirmation Request body
+	var confirmationRequest ConfirmationRequest
+	err := json.NewDecoder(r.Body).Decode(&confirmationRequest)
 	if err != nil {
-		log.Printf("Failed to parse FinishAuthorizationRequest")
+		log.Printf("Failed to parse ConfirmationRequest")
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	session, found := sessions[authorizationRequest.State]
+	// Get session, eMSP, and eMSP credentials
+	session, found := sessions[confirmationRequest.State]
 	if !found {
-		log.Printf("Session not found")
+		log.Printf("Session \"" + confirmationRequest.State + "\" not found")
 		w.WriteHeader(http.StatusNotFound)
 		return
 	}
-
 	emsp := GetEmsp(session.EmspId)
 	if emsp == nil {
-		log.Printf("eMSP not found")
+		log.Printf("eMSP with ID \"" + session.EmspId + "\" not found")
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	emspCreds := GetEmspCredential(emsp.Id)
+	if emspCreds == nil {
+		log.Printf("Unknown eMSP Credentials with ID \"" + emsp.Id + "\"")
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
+	// Discover Authorization Server
 	discoveryDocument, err := GetDiscoveryDocument(emsp.BaseUrl)
 	if err != nil {
-		log.Printf("Failed to discovery document")
+		log.Printf("Failed to get discovery document from Authorization Server")
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-
-	// Get PAR endpoint from discovery document
+	// Get Token Endpoint from discovery document
 	tokenEndpoint, found := discoveryDocument["token_endpoint"].(string)
 	if !found {
-		log.Printf("eMSP \"" + emsp.BaseUrl + "\" does not support Pushed Authorization Requests")
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-	// Get Client Secret
-	clientSecret, found := ClientSecrets[emsp.ClientId]
-	if !found {
-		log.Printf("Client Secret for Client ID \"" + emsp.ClientId + "\" not found")
+		log.Printf("eMSP \"" + emsp.BaseUrl + "\" does not support Token Endpoint")
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -342,15 +322,12 @@ func FinishAuthorizationFlow(w http.ResponseWriter, r *http.Request) {
 	tokenRequestBodyParameters := url.Values{}
 	// OAuth Authorization parameters according to RFC 6749:
 	tokenRequestBodyParameters.Set("grant_type", "authorization_code")
-	tokenRequestBodyParameters.Set("client_id", emsp.ClientId)
-	tokenRequestBodyParameters.Set("client_secret", clientSecret.Secret)
-	tokenRequestBodyParameters.Set("code", authorizationRequest.AuthCode)
-	tokenRequestBodyParameters.Set("redirect_uri", clientSecret.RedirectUri)
-	tokenRequestBodyParameters.Set("scope", "pnc")
-	tokenRequestBodyParameters.Set("state", authorizationRequest.State)
+	tokenRequestBodyParameters.Set("code", confirmationRequest.AuthCode)
+	tokenRequestBodyParameters.Set("redirect_uri", session.RedirectUri)
+	tokenRequestBodyParameters.Set("client_id", emspCreds.ClientId)
+	tokenRequestBodyParameters.Set("client_secret", emspCreds.ClientSecret)
 	// PKCE parameters according to RFC 7636:
 	tokenRequestBodyParameters.Set("code_verifier", session.PkceVerifier)
-
 	// Encode body parameters to string
 	tokenRequestBodyString := tokenRequestBodyParameters.Encode()
 
@@ -371,7 +348,6 @@ func FinishAuthorizationFlow(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-
 	// Parse Token response body
 	var tokenResponseBody map[string]interface{}
 	err = json.Unmarshal(tokenResponseBodyString, &tokenResponseBody)
@@ -397,6 +373,7 @@ func FinishAuthorizationFlow(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Get CSR endpoint
 	csrEndpoint := os.Getenv("CSR_ENDPOINT")
 	if csrEndpoint != "" {
 		log.Printf("CSR_ENDPOINT not defined")
@@ -407,17 +384,16 @@ func FinishAuthorizationFlow(w http.ResponseWriter, r *http.Request) {
 	// Send CSR to CSR Endpoint.
 	csrRequest, err := http.NewRequest("POST", csrEndpoint, strings.NewReader(csr))
 	if err != nil {
-		log.Printf("Failed to send Token Request")
+		log.Printf("Failed to send Certificate Signing Request")
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 	defer csrRequest.Body.Close()
-
 	// Add request headers
 	csrRequest.Header.Add("content-type", "application/pkcs10")
 	csrRequest.Header.Add("authorization", "bearer "+accessToken)
 
-	// Read Token response body
+	// Read CSR response body
 	defer csrRequest.Response.Body.Close()
 	csrResponseBodyString, err := io.ReadAll(csrRequest.Response.Body)
 	if err != nil {
@@ -425,14 +401,14 @@ func FinishAuthorizationFlow(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-
+	// Get filename of contract certificate file
 	certificateFile := os.Getenv("OUTPUT_FILE")
 	if certificateFile == "" {
 		log.Printf("OUTPUT_FILE not defined")
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-
+	// Write contract certificate to file
 	err = WriteCertificate(csrResponseBodyString, certificateFile)
 	if err != nil {
 		log.Printf("Failed to write certificate")
@@ -440,12 +416,13 @@ func FinishAuthorizationFlow(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Respond with success
 	w.WriteHeader(http.StatusOK)
 }
 
 func CreateCsr() (string, error) {
 	// Execute OpenSSL Command to generate CSR
-	cmd := exec.Command("./csr.sh")
+	cmd := exec.Command("./scripts/csr.sh")
 	if cmd == nil {
 		return "", errors.New("Failed to execute CSR")
 	}

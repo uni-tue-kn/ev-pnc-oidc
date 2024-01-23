@@ -1,15 +1,21 @@
 openapi: 3.0.3
 info:
   title: EV Backend
-  version: 0.0.1
+  description: Backend of the EV written in Go.
+  version: 0.1.0
 servers:
-- url: http://localhost:8080
-- url: http://ev.localhost
+  - url: http://localhost:8080
+  - url: http://ev.localhost
+tags:
+  - name: Discovery
+    description: Endpoints related to discover relevant information.
+  - name: Authorization
+    description: Endpoints related to the OAuth Authorization Flow.
 paths:
   /emsps:
     get:
       tags:
-      - Discovery
+        - Discovery
       summary: Gets supported eMSPs
       description: Returns an array of supported eMSP infos.
       operationId: getEmsps
@@ -25,161 +31,105 @@ paths:
                 x-content-type: application/json
         "500":
           description: Internal server error
-  /initialize:
+  /cpr:
     post:
       tags:
-      - Authorization
-      summary: Initializes authorization flow
-      description: Transfers the desired eMSP and the parameters to authorize.
-      operationId: initializeAuthorizationFlow
+        - Authorization
+      summary: Receives Contract Provisioning Request which initializes the authorization flow
+      description: Transfers the desired eMSP and authorization parameters.
+      operationId: requestContractProvisioning
       requestBody:
-        $ref: '#/components/requestBodies/AuthorizationRequest'
+        $ref: '#/components/requestBodies/ContractProvisioningRequest'
       responses:
         "201":
           description: Created
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AuthorizationResponse'
+                $ref: '#/components/schemas/ContractProvisioningResponse'
         "400":
           description: Bad request
         "404":
           description: eMSP ID not found
         "500":
           description: Internal server error
-  /authorize:
+  /confirm:
     post:
       tags:
-      - Authorization
+        - Authorization
       summary: Finishes the authorization
-      description: Transfers the Authorization Code to the EV which finishes the authorization
-        process.
-      operationId: finishAuthorizationFlow
+      description: Transfers the Authorization Code to the EV which finishes the authorization process.
+      operationId: confirmAuthorization
       requestBody:
-        $ref: '#/components/requestBodies/FinishAuthorizationRequest'
+        $ref: '#/components/requestBodies/ConfirmationRequest'
       responses:
         "200":
           description: OK
-        "401":
+        "404":
           description: Unknown state
         "500":
           description: Internal server error
 components:
   schemas:
     Emsp:
-      required:
-      - base_url
-      - client_id
-      - id
-      - name
       type: object
       properties:
         id:
           $ref: '#/components/schemas/EmspId'
         name:
           type: string
-          example: Ionity
+          example: OpenIDCharge
         base_url:
           type: string
           format: uri
-          example: https://login.ionity.eu/
-        client_id:
-          type: string
-          example: ev_client
+          example: https://as.example.com/
         image:
           type: string
           format: uri
-          example: https://upload.wikimedia.org/wikipedia/commons/e/e6/Ionity_logo_cmyk.svg
+      required:
+        - id
+        - name
+        - base_url
       example:
-        image: https://upload.wikimedia.org/wikipedia/commons/e/e6/Ionity_logo_cmyk.svg
-        name: Ionity
-        base_url: https://login.ionity.eu/
-        id: ionity
-        client_id: ev_client
+        id: oidcharge
+        name: OpenIDCharge
+        base_url: https://as.example.com/
     EmspId:
       type: string
-      example: ionity
-    AuthorizationRequest:
+      example: oidcharge
+    ContractProvisioningRequest:
       type: object
       properties:
         emsp_id:
           $ref: '#/components/schemas/EmspId'
-        detail:
+        redirect_uri:
+          type: string
+          format: uri
+          example: https://ua.example.com/redirect
+        authorization_detail:
           $ref: '#/components/schemas/AuthorizationDetail'
+      required:
+        - emsp_id
+        - redirect_uri
+        - authorization_detail
     AuthorizationDetail:
       type: object
       properties:
         type:
           type: string
           example: "pnc_contract_request"
-        actions:
-          type: array
-          items:
-            type: string
-            example: "contract_provisioning"
-        locations:
-          type: array
-          items:
-            type: string
-            format: uri
-            example: "https://rs.example.com"
-        chargingPeriod:
+        charging_period:
           $ref: '#/components/schemas/ChargingPeriod'
-        maximumAmount:
+        maximum_amount:
           $ref: '#/components/schemas/CurrencyAmount'
-        maximumTransactionAmount:
+        maximum_transaction_amount:
           $ref: '#/components/schemas/CurrencyAmount'
-    CurrencyAmount:
       required:
-      - amount
-      - currency
-      type: object
-      properties:
-        amount:
-          type: string
-          format: decimal
-          example: "123.50"
-        currency:
-          type: string
-          example: EUR
-          enum:
-          - EUR
-          - USD
-    AuthorizationResponse:
-      required:
-      - request_uri
-      - state
-      type: object
-      properties:
-        request_uri:
-          $ref: '#/components/schemas/RequestUri'
-        state:
-          $ref: '#/components/schemas/State'
-      example:
-        state: OacnSace5b
-        request_uri: urn:example:bwc4JK-ESC0w8acc191e-Y1LTC2
-    RequestUri:
-      type: string
-      format: uri
-      example: urn:example:bwc4JK-ESC0w8acc191e-Y1LTC2
-    State:
-      type: string
-      example: OacnSace5b
-    FinishAuthorizationRequest:
-      required:
-      - auth_code
-      - state
-      type: object
-      properties:
-        auth_code:
-          type: string
-          example: LRS7CLedws
-        state:
-          $ref: '#/components/schemas/State'
+        - type
+        - charging_period
+        - maximum_amount
+        - maximum_transaction_amount
     ChargingPeriod:
-      required:
-      - end
-      - start
       type: object
       properties:
         start:
@@ -190,14 +140,70 @@ components:
           type: string
           format: date-time
           example: 2023-10-07T15:00:00Z
+      required:
+        - start
+        - end
+    CurrencyAmount:
+      type: object
+      properties:
+        amount:
+          type: string
+          format: decimal
+          example: "123.50"
+        currency:
+          $ref: '#/components/schemas/Currencies'
+      required:
+        - amount
+        - currency
+    Currencies:
+      type: string
+      enum:
+       - EUR
+       - USD
+      example: EUR
+    ContractProvisioningResponse:
+      type: object
+      properties:
+        request_uri:
+          $ref: '#/components/schemas/RequestUri'
+        client_id:
+          $ref: '#/components/schemas/ClientId'
+        state:
+          $ref: '#/components/schemas/State'
+      required:
+        - request_uri
+        - client_id
+        - state
+    RequestUri:
+      type: string
+      description: The Request URI of a Pushed Authorization Request.
+      format: uri
+      example: urn:example:bwc4JK-ESC0w8acc191e-Y1LTC2
+    ClientId:
+      type: string
+      example: oidcharge
+    State:
+      type: string
+      example: OcnS3ace5b
+    ConfirmationRequest:
+      type: object
+      properties:
+        auth_code:
+          type: string
+          example: LRS7CLedX3ws5fiJO4KenKe
+        state:
+          $ref: '#/components/schemas/State'
+      required:
+        - auth_code
+        - state
   requestBodies:
-    AuthorizationRequest:
+    ContractProvisioningRequest:
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/AuthorizationRequest'
-    FinishAuthorizationRequest:
+            $ref: '#/components/schemas/ContractProvisioningRequest'
+    ConfirmationRequest:
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/FinishAuthorizationRequest'
+            $ref: '#/components/schemas/ConfirmationRequest'

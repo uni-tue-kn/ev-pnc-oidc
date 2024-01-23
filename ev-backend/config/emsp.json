@@ -1,16 +1,14 @@
 [
   {
-    "base_url": "http://as.localhost",
-    "image": "assets/openid_charge.svg",
+    "id": "oidcharge",
     "name": "OpenID Charge",
-    "client_id": "150558547826224",
-    "id": "oidc"
+    "base_url": "http://as.localhost",
+    "image": "assets/openid_charge.svg"
   },
   {
-    "base_url": "http://as.localhost",
-    "image": "https://upload.wikimedia.org/wikipedia/commons/e/e6/Ionity_logo_cmyk.svg",
+    "id": "ionity",
     "name": "Ionity",
-    "client_id": "ionity_ev",
-    "id": "ionity"
+    "base_url": "http://as2.localhost",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/e/e6/Ionity_logo_cmyk.svg"
   }
 ]

@@ -12,16 +12,17 @@ import (
 	"os"
 )
 
+/// List of supported eMSPs.
 var Emsps []Emsp
 
 func ReadEmsps(file string) ([]Emsp, error) {
-	// Read emsp file and return 500 response if failed
+	// Read emsp file
 	data, err := os.ReadFile(file)
 	if err != nil {
 		return nil, err
 	}
 
-	// JSON serialize emsps array
+	// JSON parse emsps array
 	var emsps []Emsp
 	err = json.Unmarshal(data, &emsps)
 	if err != nil {
@@ -32,13 +33,14 @@ func ReadEmsps(file string) ([]Emsp, error) {
 }
 
 func GetEmsps(w http.ResponseWriter, r *http.Request) {
+	// JSON serialize list of supported eMSPs.
 	data, err := json.Marshal(Emsps)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	// Write file content into HTTP response
+	// Return serialized eMSPs in HTTP JSON-encoded response
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	w.Write(data)
 	w.WriteHeader(http.StatusOK)

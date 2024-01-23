@@ -6,8 +6,8 @@
  */
 package ev_backend
 
-type AuthorizationResponse struct {
-	RequestUri string `json:"request_uri"`
+type ConfirmationRequest struct {
+	AuthCode string `json:"auth_code"`
 
 	State string `json:"state"`
 }

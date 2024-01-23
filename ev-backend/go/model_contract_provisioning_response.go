@@ -6,12 +6,10 @@
  */
 package ev_backend
 
-import (
-	"time"
-)
+type ContractProvisioningResponse struct {
+	RequestUri string `json:"request_uri"`
 
-type AuthorizationOptionsChargingPeriod struct {
-	Start time.Time `json:"start"`
+	ClientId string `json:"client_id"`
 
-	End time.Time `json:"end"`
+	State string `json:"state"`
 }

@@ -6,8 +6,12 @@
  */
 package ev_backend
 
-type FinishAuthorizationRequest struct {
-	AuthCode string `json:"auth_code"`
+import (
+	"time"
+)
 
-	State string `json:"state"`
+type ChargingPeriod struct {
+	Start time.Time `json:"start"`
+
+	End time.Time `json:"end"`
 }
