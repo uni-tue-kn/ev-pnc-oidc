@@ -191,7 +191,7 @@ func RequestContractProvisioning(w http.ResponseWriter, r *http.Request) {
 	// OAuth Authorization parameters according to RFC 6749:
 	bodyParameters.Set("response_type", "code")
 	bodyParameters.Set("redirect_uri", cpr.RedirectUri)
-	bodyParameters.Set("scope", "pnc")
+	bodyParameters.Set("scope", "ccsr")
 	bodyParameters.Set("client_id", emspCreds.ClientId)
 	bodyParameters.Set("state", sessionId)
 	// PKCE parameters according to RFC 7636:
