@@ -1,8 +1,10 @@
 services:
   # Reverse Proxy as HTTP/HTTPS Ingress
   proxy:
-    image: traefik:2.10
+    image: traefik:2.11
     restart: unless-stopped
+    networks:
+      - proxy
     ports:
       - 80:80/tcp
       - 443:443/tcp
@@ -12,7 +14,7 @@ services:
       INWX_PASSWORD_FILE: /run/secrets/inwx_password
       INWX_SHARED_SECRET_FILE: /run/secrets/inwx_secret
     command:
-      # Enable Access Log
+      # Enable access log
       - --accesslog=true
       # Configure HTTP and HTTPS Entrypoints
       - --entrypoints.web.address=:80
@@ -20,7 +22,7 @@ services:
       - --entrypoints.websecure.http.tls=true
       # Configure Let's Encrypt with DNS Challenge
       - --entrypoints.websecure.http.tls.certresolver=letsencrypt
-      - --certificatesresolvers.letsencrypt.acme.email=jonas@primbs.is.it
+      - --certificatesresolvers.letsencrypt.acme.email=jonas.primbs@uni-tuebingen.de
       - --certificatesresolvers.letsencrypt.acme.storage=/etc/traefik/acme/acme.json
       - --certificatesresolvers.letsencrypt.acme.dnschallenge.provider=inwx
       - --certificatesresolvers.letsencrypt.acme.dnschallenge.resolvers=1.1.1.1:53,8.8.8.8:53
@@ -28,9 +30,10 @@ services:
       - --providers.docker=true
       - --providers.docker.endpoint=unix:///var/run/docker.sock
       - --providers.docker.exposedbydefault=false
-      # Enable JWT Plugin
-      - --experimental.plugins.jwt.modulename=github.com/Brainnwave/jwt-middleware
-      - --experimental.plugins.jwt.version=v1.1.5
+      - --providers.docker.network=proxy
+      # # Enable JWT Plugin
+      # - --experimental.plugins.jwt.modulename=github.com/Brainnwave/jwt-middleware
+      # - --experimental.plugins.jwt.version=v1.1.5
     secrets:
       - inwx_username
       - inwx_password
@@ -38,17 +41,18 @@ services:
     volumes:
       # Mount Docker Socket to use it as provider
       - /var/run/docker.sock:/var/run/docker.sock:ro
-      # Mount Certificates for persistancy
+      # Mount certificates for persistency
       - .secrets/acme:/etc/traefik/acme
-
-  # eMSP Authorization Server for Client Authorization
-  as:
-    build:
-      context: ./emsp-authorizationserver
-      dockerfile: Dockerfile
-    restart: unless-stopped
+  
+  # eMSP Authorization Server
+  as-http:
+    image: nginx:1.24-alpine
     depends_on:
       - proxy
+      - as-php
+    networks:
+      - proxy
+      - php_fpm
     labels:
       # Enable HTTP and HTTPS Entrypoint via http(s)://as.oidcharge.primbs.dev
       - traefik.enable=true
@@ -56,23 +60,20 @@ services:
       - traefik.http.routers.emsp-as.rule=Host(`as.oidcharge.primbs.dev`)
       - traefik.http.routers.emsp-as.tls=true
       - traefik.http.routers.emsp-as.tls.certresolver=letsencrypt
-    environment:
-      PORT: 8080
-      # Set Authlete API Key and Secrets
-      SERVICE_API_KEY_FILE: /run/secrets/authlete_api_key
-      SERVICE_API_SECRET_FILE: /run/secrets/authlete_api_secret
-      # Set users
-      USER_CREDS: /app/config/users.json
-      # Set key pair directory
-      KEYS_DIR: /app/keys
-    secrets:
-      # Import Authlete API Key and Secrets
-      - authlete_api_key
-      - authlete_api_secret
     volumes:
-      # Mount users file and key pairs
-      - .secrets/as/config:/app/config
-      - .secrets/as/keys:/app/keys
+      - ./emsp-as-php/src:/var/www/html
+      - ./emsp-as-php/nginx.conf:/etc/nginx/conf.d/default.conf
+  as-php:
+    image: php:8.3-fpm-alpine
+    networks:
+      - php_fpm
+    environment:
+      API_KEY: ${API_KEY}
+      API_SECRET: ${API_SECRET}
+      CLIENT_ID: ${CLIENT_ID}
+      CLIENT_SECRET: ${CLIENT_SECRET}
+    volumes:
+      - ./src:/var/www/html
 
   # eMSP Backend to request X.509 certificates
   emsp:
@@ -80,9 +81,12 @@ services:
       context: ./emsp-backend
       dockerfile: Dockerfile
     restart: unless-stopped
+    networks:
+      - proxy
     depends_on:
       - proxy
-      - as
+      - as-http
+      - as-php
     environment:
       PORT: 8080
       TRUSTED_ISSUER: https://as.oidcharge.primbs.dev
@@ -119,6 +123,8 @@ services:
     restart: unless-stopped
     depends_on:
       - proxy
+    networks:
+      - proxy
     labels:
       - traefik.enable=true
       - traefik.http.routers.ev-backend.entrypoints=web
@@ -131,6 +137,7 @@ services:
       - ./ev-backend/config:/app/config
 
   # User Agent for Certificate Provisioning
+  # Available on https://ua.oidcharge.primbs.dev/
   user-agent:
     build:
       context: ./user-agent
@@ -138,12 +145,12 @@ services:
     restart: unless-stopped
     depends_on:
       - proxy
+    networks:
+      - proxy
     labels:
       - traefik.enable=true
       - traefik.http.routers.user-agent.entrypoints=web,websecure
       - traefik.http.routers.user-agent.rule=Host(`ua.oidcharge.primbs.dev`)
-      - traefik.http.routers.user-agent.tls=true
-      - traefik.http.routers.user-agent.tls.certresolver=letsencrypt
 
 secrets:
   # INWX Credentials for DNS Challenge
@@ -153,10 +160,16 @@ secrets:
     file: .secrets/inwx_password.txt
   inwx_secret:
     file: .secrets/inwx_secret.txt
-  authlete_api_key:
-    file: .secrets/authlete_api_key.txt
-  authlete_api_secret:
-    file: .secrets/authlete_api_secret.txt
+  # authlete_api_key:
+  #   file: .secrets/authlete_api_key.txt
+  # authlete_api_secret:
+  #   file: .secrets/authlete_api_secret.txt
+
+networks:
+  proxy:
+    driver: bridge
+  php_fpm:
+    driver: bridge
 
 volumes:
   cc_output:

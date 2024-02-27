@@ -1,5 +1,7 @@
-.vscode
-.editorconfig
-Dockerfile
-dist
-node_modules
+/.angular/cache
+/.vscode
+/.editorconfig
+/node_modules
+/Dockerfile
+/dist
+/README.md
