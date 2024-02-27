@@ -1,32 +1,28 @@
-theory oidc_pnc2_OOB_s4_full_inj
+theory oidc_pnc
 
 /*
-Tamarin model for oidc_pnc2_OOB_s4_full_inj
---stop-on-trace=SEQDFS
+Tamarin model for oidc_pnc
 
 Run with: 
-time tamarin-prover --prove=AUTO_* --quit-on-warning --auto-sources --stop-on-trace=SEQDFS --heuristic=O --oraclename=oracle_oob_start oidc_pnc2_OOB_s4_full_inj.spthy +RTS -N6 -RTS
-
-time tamarin-prover --prove=correctness_* --quit-on-warning --auto-sources --heuristic=O --oraclename=oracle_oob_start oidc_pnc2_OOB_s4_full_inj.spthy +RTS -N6 -RTS
-
+time tamarin-prover --prove --quit-on-warning --auto-sources --stop-on-trace=SEQDFS --heuristic=O --oraclename=oracle  oidc_pnc.spthy +RTS -N8 -RTS
 
 
 ==============================================================================
 summary of summaries:
 
-analyzed: oidc_pnc2_OOB_s4_full_inj.spthy
+analyzed: oidc_pnc.spthy
 
   User_LTK (all-traces): verified (4 steps)
   User_SK (all-traces): verified (10 steps)
-  EV_LTK (all-traces): verified (15 steps)
+  EV_LTK (all-traces): verified (9 steps)
   EV_LTK_UA (all-traces): verified (23 steps)
   UA_Auth_code (all-traces): verified (30 steps)
-  EV_Auth_code (all-traces): verified (46 steps)
-  EV_Auth_code2 (all-traces): verified (3020 steps)
-  correctness_simple6 (exists-trace): verified (19 steps)
-  correctness_simple7 (exists-trace): verified (30 steps)
-  correctness_simple8 (exists-trace): verified (47 steps)
-  correctness_simple9 (exists-trace): verified (71 steps)
+  EV_Auth_code (all-traces): verified (35 steps)
+  EV_Auth_code2 (all-traces): verified (1580 steps)
+  correctness_simple6 (exists-trace): verified (16 steps)
+  correctness_simple7 (exists-trace): verified (28 steps)
+  correctness_simple8 (exists-trace): verified (45 steps)
+  correctness_simple9 (exists-trace): verified (69 steps)
   auth1_weak_UA_EV (all-traces): verified (14 steps)
   auth1_non_inj_UA_EV (all-traces): verified (14 steps)
   auth1_inj_UA_EV (all-traces): verified (36 steps)
@@ -35,29 +31,30 @@ analyzed: oidc_pnc2_OOB_s4_full_inj.spthy
   auth2_non_inj_EV_UA (all-traces): verified (17 steps)
   auth2_inj_EV_UA (all-traces): verified (19 steps)
   auth3_non_inj_User_EMSP (all-traces): verified (28 steps)
-  auth4_non_inj_EMSP_User (all-traces): verified (30 steps)
-  auth4_non_inj_EMSP_User2 (all-traces): verified (30 steps)
+  auth3_inj_User_EMSP (all-traces): verified (36 steps)
+  auth4_non_inj_EMSP_User (all-traces): verified (28 steps)
+  auth4_inj_EMSP_User (all-traces): verified (938 steps)
+  auth4_non_inj_EMSP_User2 (all-traces): verified (28 steps)
+  auth4_inj_EMSP_User2 (all-traces): verified (938 steps)
   auth4_non_inj_UA_EV3 (all-traces): verified (3 steps)
-  auth5_non_inj_EV_EMSP (all-traces): verified (6161 steps)
-  AUTO_typing (all-traces): verified (14240 steps)
+  auth5_non_inj_EV_EMSP (all-traces): verified (6135 steps)
+  auth5_inj_EV_EMSP (all-traces): verified (6247 steps)
+  auth6_non_inj_EMSP_EV_CC (all-traces): verified (110 steps)
+  auth6_inj_EMSP_EV_CC (all-traces): verified (134 steps)
+  AUTO_typing (all-traces): verified (9605 steps)
 
 ==============================================================================
-ubuntu@tam-ub:~/git/pnc_oidc/Tamarin$ nohup \time -o t6.log tamarin-prover --prove --quit-on-warning --auto-sources --stop-on-trace=SEQDFS --heuristic=O --oraclename=oracle_oob_start  oidc_pnc2_OOB_s4_full_inj.spthy +RTS -N12 -RTS > non_inj_o6.log 2> /dev/null &
 
-ubuntu@tam-ub:~/git/pnc_oidc/Tamarin$ cat t6.log
-368537.67user 368429.59system 21:55:33elapsed 933%CPU (0avgtext+0avgdata 13532884maxresident)k
-0inputs+43776outputs (0major+142051512minor)pagefaults 0swaps
-
+real	933m53,130s
+user	3665m0,202s
+sys	2248m6,510s
 
 
-time tamarin-prover --prove=auth3_non_inj_EV_EMSP --quit-on-warning --auto-sources --stop-on-trace=SEQDFS --heuristic=O --oraclename=oracle_oob_start oidc_pnc2_OOB_s4_full_inj.spthy +RTS -N6 -RTS
+tested with Tamarin 1.6.1
 
 
-
-
-time tamarin-prover --prove --quit-on-warning --auto-sources --stop-on-trace=SEQDFS --heuristic=O --oraclename=oracle_oob_start  oidc_pnc2_OOB_s4_full_inj.spthy +RTS -N6 -RTS
-time tamarin-prover --prove --quit-on-warning --auto-sources oidc_pnc2_OOB_s4_full_inj.spthy +RTS -N6 -RTS
-tamarin-prover interactive --quit-on-warning --auto-sources oidc_pnc2_OOB_s4_full_inj.spthy --stop-on-trace=SEQDFS --heuristic=O --oraclename=oracle_oob_start +RTS -N6 -RTS
+interactive with:
+tamarin-prover interactive --quit-on-warning --auto-sources oidc_pnc.spthy --stop-on-trace=SEQDFS --heuristic=O --oraclename=oracle +RTS -N8 -RTS
 
 
 -DAllow_QR_Leak
@@ -453,66 +450,32 @@ in
 ]
 */
 
-rule User_Agent_prepares_PnC_Registration2:
-let
-	res_emsp_list = <$reg_endpoint, $user_ip, 'res_emsp_list', $emsp_endpoint1, $emsp_endpoint2>
-	res_emsp_list_bt = <$device_name, $user_name, senc(res_emsp_list, LTK)>
-in
-[ 
-	!EMSP_Pk( $emsp_endpoint1, EMSP_PK1 ),
-	!EMSP_Pk( $emsp_endpoint2, EMSP_PK2 ),
-	!EV_State11($device_name, $reg_endpoint, $user_name, LTK)
-] 
---[
-	// Verifications
-	NEq($emsp_endpoint1, $device_name),
-	NEq($emsp_endpoint2, $device_name),
-	NEq($emsp_endpoint1, $emsp_endpoint2),
-	
-	// Correctness events
-	User_Agent_prepares_PnC_Registration2(),
-	OnlyOnce_Correctness('User_Agent_prepares_PnC_Registration2')
-]->
-[	
-	Out(res_emsp_list_bt),
-	EV_State_reg2($device_name, $reg_endpoint, $user_name, LTK, $user_ip, $emsp_endpoint1, $emsp_endpoint2)
-]
 
 rule User_Agent_prepares_PnC_Registration3:
-let
+//let
 	//res_emsp_list = <$reg_endpoint, $user_ip, 'res_emsp_list', $emsp_endpoint1, $emsp_endpoint2>
-	res_emsp_list_bt = <$device_name, $user_name, enc_res_emsp_list>
-	res_emsp_list = sdec(enc_res_emsp_list, LTK)
-
-	reg_endpoint_in = fst(res_emsp_list)
-	user_ip_in = fst(snd(res_emsp_list))
-	res_emsp_list_tag = fst(snd(snd(res_emsp_list)))
-	emsp_endpoint1 = fst(snd(snd(snd(res_emsp_list))))
-	emsp_endpoint2 = snd(snd(snd(snd(res_emsp_list))))
-in
+	//res_emsp_list_bt = <$device_name, $user_name, enc_res_emsp_list>
+//in
 [ 
 	!User_Agent_State12($user_name, $device_name, $reg_endpoint, LTK),
 	//User_Agent_State_reg1($user_name, $device_name, $reg_endpoint, LTK, $user_ip),
-	In(res_emsp_list_bt)
+	!EMSP_Pk( $emsp_endpoint1, EMSP_PK1 ),
+	!EMSP_Pk( $emsp_endpoint2, EMSP_PK2 )
+	//In(res_emsp_list_bt)
 ] 
 --[
 	// Verifications
-	Eq($reg_endpoint, reg_endpoint_in), 
-	Eq($user_ip, user_ip_in), 
-	Eq(res_emsp_list_tag, 'res_emsp_list'), 
-	NEq(emsp_endpoint1, $user_name),
-	NEq(emsp_endpoint2, $user_name),
-	NEq(emsp_endpoint1, emsp_endpoint2),
+	NEq($emsp_endpoint1, $user_name),
+	NEq($emsp_endpoint2, $user_name),
+	NEq($emsp_endpoint1, $emsp_endpoint2),
 
 	// Correctness events
 	User_Agent_prepares_PnC_Registration3(),
-	OnlyOnce_Correctness('User_Agent_prepares_PnC_Registration3'),
-
-	User_Agent_prepares_PnC_Registration3_s(res_emsp_list_bt)
+	OnlyOnce_Correctness('User_Agent_prepares_PnC_Registration3')
 ]->
 [	
-	User_Agent_State_reg3($user_name, $device_name, $reg_endpoint, LTK, $user_ip, emsp_endpoint1, emsp_endpoint2),
-	Out_S_V(<$user_name, $device_name, emsp_endpoint1, emsp_endpoint2, 'emsp_selection'>)
+	User_Agent_State_reg3($user_name, $device_name, $reg_endpoint, LTK, $user_ip, $emsp_endpoint1, $emsp_endpoint2),
+	Out_S_V(<$user_name, $device_name, $emsp_endpoint1, $emsp_endpoint2, 'emsp_selection'>)
 ]
 
 /******************************************/
@@ -603,7 +566,7 @@ in
 ]
 
 //emsp1
-rule Request_Contract_Provisioning2_1:
+rule Request_Contract_Provisioning2:
 let
 	//req_cont_prov = <$user_ip, $reg_endpoint, 'req_cont_prov', emsp_endpointX, $contract_params>
 	req_cont_prov_bt = <$user_name, $device_name, enc_req_cont_prov>
@@ -612,58 +575,25 @@ let
 	user_ip_in = fst(req_cont_prov)
 	reg_endpoint_in = fst(snd(req_cont_prov))
 	req_cont_prov_tag = fst(snd(snd(req_cont_prov)))
-	emsp_endpointX_in = fst(snd(snd(snd(req_cont_prov))))
+	emsp_endpoint1 = fst(snd(snd(snd(req_cont_prov))))
 	contract_params = snd(snd(snd(snd(req_cont_prov))))
 in
 [ 
-	EV_State_reg2($device_name, $reg_endpoint, $user_name, LTK, user_ip, $emsp_endpoint1, $emsp_endpoint2),
+	!EV_State11($device_name, $reg_endpoint, $user_name, LTK),
 	In(req_cont_prov_bt)
 ] 
 --[
 	// Verifications
 	Eq($reg_endpoint, reg_endpoint_in), 
-	Eq(user_ip, user_ip_in), 
 	Eq(req_cont_prov_tag, 'req_cont_prov'), 
-	Eq($emsp_endpoint1, emsp_endpointX_in), 
+	NEq(emsp_endpoint1, $device_name),
 
 	// Correctness events
 	Request_Contract_Provisioning2(),
 	OnlyOnce_Correctness('Request_Contract_Provisioning2')
 ]->
 [	
-	EV_State_prov1($device_name, $reg_endpoint, $user_name, LTK, user_ip, $emsp_endpoint1, contract_params)
-]
-
-//emsp2
-rule Request_Contract_Provisioning2_2:
-let
-	//req_cont_prov = <$user_ip, $reg_endpoint, 'req_cont_prov', emsp_endpointX, $contract_params>
-	req_cont_prov_bt = <$user_name, $device_name, enc_req_cont_prov>
-	req_cont_prov = sdec(enc_req_cont_prov, LTK)
-
-	user_ip_in = fst(req_cont_prov)
-	reg_endpoint_in = fst(snd(req_cont_prov))
-	req_cont_prov_tag = fst(snd(snd(req_cont_prov)))
-	emsp_endpointX_in = fst(snd(snd(snd(req_cont_prov))))
-	contract_params = snd(snd(snd(snd(req_cont_prov))))
-in
-[ 
-	EV_State_reg2($device_name, $reg_endpoint, $user_name, LTK, user_ip, $emsp_endpoint1, $emsp_endpoint2),
-	In(req_cont_prov_bt)
-] 
---[
-	// Verifications
-	Eq($reg_endpoint, reg_endpoint_in), 
-	Eq(user_ip, user_ip_in), 
-	Eq(req_cont_prov_tag, 'req_cont_prov'), 
-	Eq($emsp_endpoint2, emsp_endpointX_in), 
-
-	// Correctness events
-	Request_Contract_Provisioning2(),
-	OnlyOnce_Correctness('Request_Contract_Provisioning2')
-]->
-[	
-	EV_State_prov1($device_name, $reg_endpoint, $user_name, LTK, user_ip, $emsp_endpoint2, contract_params)
+	EV_State_prov1($device_name, $reg_endpoint, $user_name, LTK, user_ip_in, emsp_endpoint1, contract_params)
 ]
 
 
@@ -850,6 +780,7 @@ in
 	CommitUser_EMSP_auth_code2($account_name, emsp_endpointX, <evId, authorization_code>),
 	Honest(emsp_endpointX),
 	Honest($user_name),
+	Honest($account_name),
 	Honest($user_ip)
 	// CommitEV_EMSP_auth_code(evId, emsp_endpointX, authorization_code),
 	// Honest($device_name),
@@ -879,49 +810,6 @@ rule User_Agent_starts_Authorization_Request4:
 	Out_S_V(<$user_name, $evId, $contract_params, 'evIdOK'>)
 ]
 
-/*
-rule User_Agent_starts_Authorization_Request5:
-[ 
-	User_Agent_State_auth3($user_name, $device_name, $reg_endpoint, LTK, $user_ip, emsp_endpointX, $contract_params, request_uri, evId, ~TLS_Key_UA, $account_name, authorization_code),
-	In_S_V(<$user_name, evId, $contract_params, 'evIdOK'>)	
-]
---[
-	// Correctness events
-	User_Agent_starts_Authorization_Request5(),
-	OnlyOnce_Correctness('User_Agent_starts_Authorization_Request5')
-]->
-[
-	User_Agent_State_auth5($user_name, $device_name, $reg_endpoint, LTK, $user_ip, emsp_endpointX, $contract_params, request_uri, evId, ~TLS_Key_UA, $account_name),
-	Out(<$user_ip, <emsp_endpointX, request_uri>, senc(<'Authorization_Request_User_Ok'>, ~TLS_Key_UA)>) //TODO:data?
-]*/
-
-/*
-rule User_Agent_starts_Authorization_Request6:
-let
-	authorization_details = <$emsp_endpointX, $contract_params, evId>
-	oauth_push = <code_challenge, 'pnc_authorize', authorization_details>
-in
-[ 
-	EMSP_State_auth1($emsp_endpointX, $EV_pub_endpoint, oauth_push, $request_uri, user_ip, TLS_Key_EV, ~TLS_Key_UA, account_name),
-	In(<user_ip, <$emsp_endpointX, $request_uri>, senc(<'Authorization_Request_User_Ok'>, ~TLS_Key_UA)>),
-	Fr(~authorization_code)
-]
---[
-	// Correctness events
-	User_Agent_starts_Authorization_Request6(),
-	User_Agent_starts_Authorization_Request6_auth_code($emsp_endpointX, user_ip, $EV_pub_endpoint, ~authorization_code),
-	OnlyOnce_Correctness('User_Agent_starts_Authorization_Request6'),
-	Auth_Code_EMSP($emsp_endpointX, ~authorization_code),
-
-	//Authentication events
-	RunningEMSP_EV_auth_code($emsp_endpointX, evId, ~authorization_code),
-	RunningEMSP_User_auth_code($emsp_endpointX, account_name, ~authorization_code),
-	RunningEMSP_User_auth_code2($emsp_endpointX, account_name, <evId, ~authorization_code>)
-]->
-[
-	Out(<$emsp_endpointX, user_ip, senc(<'Authorization_Request_Redirect', ~authorization_code>, ~TLS_Key_UA)>),
-	EMSP_State_auth6($emsp_endpointX, $EV_pub_endpoint, oauth_push, $request_uri, user_ip, ~authorization_code, TLS_Key_EV)
-]*/
 
 rule User_Agent_starts_Authorization_Request7:
 let
@@ -1126,7 +1014,10 @@ in
 	Honest($emsp_endpointX),
 	Honest($EV_pub_endpoint),
 	Honest(evId),
-	Honest(account_name) //no pw leak
+	Honest(account_name), //no pw leak
+	
+	//Authentication events
+	RunningEMSP_EV_CC($emsp_endpointX, evId, contract_cert_tbs)
 ]->
 [
 	Out(<$emsp_endpointX, $EV_pub_endpoint, senc(<'contract_cert', contract_cert>, TLS_Key)>)
@@ -1149,7 +1040,14 @@ in
 
 	// Correctness events
 	Token_Request5(),
-	OnlyOnce_Correctness('Token_Request5')
+	OnlyOnce_Correctness('Token_Request5'),
+
+	//Authentication events
+	CommitEV_EMSP_CC($evId, $emsp_endpointX, contract_cert_tbs),
+	Honest($emsp_endpointX),
+	Honest($EV_pub_endpoint),
+	Honest($evId),
+	Honest($user_name) //no pw leak
 ]->
 [
 	//Done
@@ -1159,38 +1057,6 @@ in
 
 
 // **** lemmas ****
-/*
-lemma auth_BT_SessionKey_Secrecy [reuse]:
-"
-All SK #i .
-	BT_SessionKey(SK) @ i 
-	==>
-	not (
-		Ex  #j . 
-			!KU(SK) @ j
-	)
-"
-lemma auth_BT_LTKey_Secrecy [reuse]:
-"
-All SK #i .
-	BT_LTK(SK) @ i 
-	==>
-	not (
-		Ex  #j . 
-			!KU(SK) @ j
-	)
-"
-lemma auth_Code_Secrecy [reuse]:
-"
-All c #i .
-Auth_Code(c) @ i 
-	==>
-	not (
-		Ex  #j . 
-			!KU(c) @ j & #j<#i
-	) 
-"*/
-
 
 lemma User_LTK [reuse]:
 "
@@ -1245,6 +1111,7 @@ Token_Request1_auth_code2(device_name, user_name, emsp_endpointX, authorization_
 	Ex  account_name #j . 
 		User_Agent_starts_Authorization_Request7_auth_code(user_name, device_name, emsp_endpointX, account_name, authorization_code) @ j & #j<#i
 "
+
 lemma EV_Auth_code2 [reuse]:
 "
 All user_name device_name emsp_endpointX authorization_code #i .
@@ -1258,168 +1125,16 @@ Token_Request1_auth_code2(device_name, user_name, emsp_endpointX, authorization_
 "
 /**/
 
-/*
-lemma EV_LTK_User [reuse]:
-"
-All user_name device_name LTK #i .
-Token_Request1_LTK(device_name, user_name, LTK) @ i 
-	==>
-	Ex  #j . 
-	User_Agent_connects_to_EV5_LTK(user_name, device_name, LTK) @ j & #j<#i
-"
-*/
-
-/*
-lemma Auth_Code_EMSP [reuse]:
-"
-All emsp authorization_code #i .
-Auth_Code_EMSP(emsp, authorization_code) @ i 
-	==>
-	not (
-		Ex  #j . 
-			K(authorization_code) @ j
-	) 
-	|
-	(
-		Ex  #j . 
-			KeyReveal('LongTermKey_KeyReveal_EMSP', emsp) @ j
-	) 
-"*/
-/*
-lemma auth_Prov_auth_code [reuse]:
-"
-All device_name user_name EV_pub_endpoint authorization_code #i .
-	Token_Request1_auth_code(device_name, user_name, EV_pub_endpoint, authorization_code) @ i 
-	==>
-	(
-		Ex emsp_endpointX user_ip #j #k . 
-		User_Agent_starts_Authorization_Request7_auth_code(user_name, device_name, emsp_endpointX, user_ip, authorization_code) @ j
-		& (#j<#i)
-		&
-		User_Agent_starts_Authorization_Request6_auth_code(emsp_endpointX, user_ip, EV_pub_endpoint, authorization_code) @ k
-		& (#k<#i)
-		&
-		not (
-			Ex  #j . 
-				K(authorization_code) @ j
-		)
-	) 
-"
-
-lemma auth_Prov_LTK [reuse]:
-"
-All device_name user_name LTK #i .
-	Token_Request1_LTK(device_name, user_name, LTK) @ i 
-	==>
-	(
-		Ex  #j . 
-		CommitUA_EV_LTK(user_name, device_name, LTK) @ j
-		& (#j<#i)
-	) 
-	&
-	not (
-		Ex  #j . 
-			K(LTK) @ j
-	)
-"
-
-lemma auth_Prov_LTK2 [reuse]:
-"
-All device_name user_name LTK #i .
-	Token_Request1_LTK(device_name, user_name, LTK) @ i 
-	==>
-	(
-		Ex  #j . 
-		CommitEV_UA_LTK(device_name, user_name, LTK) @ j
-		& (#j<#i)
-	) 
-	&
-	not (
-		Ex  #j . 
-			K(LTK) @ j
-	)
-"
-
-lemma auth_Prov_access_token_req [reuse]:
-"
-All ev emsp req #i .
-	Token_Request2_access_token_req(ev, emsp, req) @ i 
-	==>
-	(
-		Ex  #j . 
-		Token_Request1_access_token_req(ev, emsp, req) @ j
-		& (#j<#i)
-	) 
-	&
-	not (
-		Ex  #j . 
-			K(req) @ j
-	)
-"
-
-lemma auth_Prov_access_token [reuse]:
-"
-All ev emsp tok #i .
-	Token_Request3_access_token(ev, emsp, tok) @ i 
-	==>
-	(
-		Ex  #j . 
-		Token_Request2_access_token(ev, emsp, tok) @ j
-		& (#j<#i)
-	) 
-	&
-	not (
-		Ex  #j . 
-			K(tok) @ j
-	)
-"
-
-lemma auth_Prov_access_cert_req [reuse]:
-"
-All ev emsp cert_req #i .
-	Token_Request4_cert_req(ev, emsp, cert_req) @ i 
-	==>
-	(
-		Ex  #j . 
-		Token_Request3_cert_req(ev, emsp, cert_req) @ j
-		& (#j<#i)
-	) 
-	&
-	not (
-		Ex  #j . 
-			K(cert_req) @ j
-	)
-"
-*/
-
-/*
-lemma auth_TLS_Key_EV_Secrecy [reuse]:
-"
-All entity SK #i .
-	TLS_Key_EV(entity, SK) @ i 
-	==>
-	not (
-		Ex  #j . 
-			K(SK) @ j
-	) 
-	|
-	(
-		Ex event #j . 
-			KeyReveal(event, entity) @ j
-	) 
-"
-*/
 
 lemma correctness_simple6:
 exists-trace
-" Ex  #i0 #i3 #i4 #i5 #i11 #i12 #i14 #i15 DHKey1 DHKey2 .
+" Ex  #i0 #i3 #i4 #i5 #i11 #i12 #i15 DHKey1 DHKey2 .
 	EV_starts_Setup() @i0
 	& User_Agent_connects_to_EV3() @i3
 	& User_Agent_connects_to_EV4(DHKey1) @i4
 	& User_Agent_connects_to_EV5(DHKey2) @i5
 	& User_Agent_connects_to_EV11() @i11
 	& User_Agent_connects_to_EV12() @i12
-	& User_Agent_prepares_PnC_Registration2() @i14
 	& User_Agent_prepares_PnC_Registration3() @i15
 
 
@@ -1440,7 +1155,7 @@ exists-trace
 
 lemma correctness_simple7:
 exists-trace
-" Ex  #i0 #i3 #i4 #i5 #i11 #i12 #i14 #i15
+" Ex  #i0 #i3 #i4 #i5 #i11 #i12 #i15
 	  #i16 #i17 #i18 #i19 #i20 #i21 #i22  DHKey1 DHKey2 .
 	EV_starts_Setup() @i0
 	& User_Agent_connects_to_EV3() @i3
@@ -1448,7 +1163,6 @@ exists-trace
 	& User_Agent_connects_to_EV5(DHKey2) @i5
 	& User_Agent_connects_to_EV11() @i11
 	& User_Agent_connects_to_EV12() @i12
-	& User_Agent_prepares_PnC_Registration2() @i14
 	& User_Agent_prepares_PnC_Registration3() @i15
 
 	& User_selects_eMSP1() @i16
@@ -1475,7 +1189,7 @@ exists-trace
 
 lemma correctness_simple8:
 exists-trace
-" Ex  #i0 #i3 #i4 #i5 #i11 #i12 #i14 #i15
+" Ex  #i0 #i3 #i4 #i5 #i11 #i12 #i15
 	  #i16 #i17 #i18 #i19 #i20 #i21 #i22 #i23 #i24 #i25 #i26 #i29 
 	   DHKey1 DHKey2 .
 	EV_starts_Setup() @i0
@@ -1484,7 +1198,6 @@ exists-trace
 	& User_Agent_connects_to_EV5(DHKey2) @i5
 	& User_Agent_connects_to_EV11() @i11
 	& User_Agent_connects_to_EV12() @i12
-	& User_Agent_prepares_PnC_Registration2() @i14
 	& User_Agent_prepares_PnC_Registration3() @i15
 
 	& User_selects_eMSP1() @i16
@@ -1518,7 +1231,7 @@ exists-trace
 
 lemma correctness_simple9:
 exists-trace
-" Ex  #i0 #i3 #i4 #i5 #i11 #i12 #i14 #i15
+" Ex  #i0 #i3 #i4 #i5 #i11 #i12 #i15
 	  #i16 #i17 #i18 #i19 #i20 #i21 #i22 #i23 #i24 #i25 #i26 #i29 
 	  #i30 #i31 #i32 #i33 #i34 DHKey1 DHKey2 .
 	EV_starts_Setup() @i0
@@ -1527,7 +1240,6 @@ exists-trace
 	& User_Agent_connects_to_EV5(DHKey2) @i5
 	& User_Agent_connects_to_EV11() @i11
 	& User_Agent_connects_to_EV12() @i12
-	& User_Agent_prepares_PnC_Registration2() @i14
 	& User_Agent_prepares_PnC_Registration3() @i15
 
 	& User_selects_eMSP1() @i16
@@ -1976,6 +1688,7 @@ All ev ua authorization_code #i .
 	)
 "
 
+/*
 lemma auth4_inj_UA_EV3:
 "
 All ev ua authorization_code #i .
@@ -2003,7 +1716,7 @@ All ev ua authorization_code #i .
 			(Ex RevealEvent Entity #kr . KeyReveal(RevealEvent, Entity) @ kr & Honest(Entity) @ i)
 		)
 	)
-"
+"*/
 
 /*
 lemma auth4_non_inj_EMSP_EV:
@@ -2084,5 +1797,60 @@ All emsp evId PKev #i .
 	)
 "
 
+
+
+lemma auth6_non_inj_EMSP_EV_CC:
+"
+All emsp evId CC #i .
+	(
+		(
+			CommitEV_EMSP_CC(evId, emsp, CC) @ i 
+		)
+		==>
+		(
+			(
+				(Ex #j . 
+					(
+						RunningEMSP_EV_CC(emsp, evId, CC) @ j
+						& 
+						(#j<#i) 
+					)
+				)
+			)
+			|
+			(Ex RevealEvent Entity #kr . KeyReveal(RevealEvent, Entity) @ kr & Honest(Entity) @ i)
+		)
+	)
+"
+
+
+lemma auth6_inj_EMSP_EV_CC:
+"
+All emsp evId CC #i .
+	(
+		(
+			CommitEV_EMSP_CC(evId, emsp, CC) @ i 
+		)
+		==>
+		(
+			(
+				(Ex #j . 
+					(
+						RunningEMSP_EV_CC(emsp, evId, CC) @ j
+						& 
+						(#j<#i) 
+						&
+						( not(
+							Ex emsp2 evId2 #i2 . ( CommitEV_EMSP_CC(evId2, emsp2, CC) @ i2 & not(#i2=#i) )
+							)
+						)
+					)
+				)
+			)
+			|
+			(Ex RevealEvent Entity #kr . KeyReveal(RevealEvent, Entity) @ kr & Honest(Entity) @ i)
+		)
+	)
+"
 
 end
