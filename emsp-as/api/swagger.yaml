@@ -11,11 +11,13 @@ tags:
     description: Endpoints related to the OIDC discovery.
   - name: Authorization
     description: Endpoints related to the OAuth Authorization Flow.
+  - name: Authentication
+    description: Endpoints related to user authentication.
 paths:
   /.well-known/openid-configuration:
     get:
       tags:
-      - Discovery
+        - Discovery
       summary: Gets the OpenID Configuration
       description: Gets the OpenID Configuration.
       operationId: getDiscoveryDocument
@@ -66,7 +68,7 @@ paths:
                 $ref: '#/components/schemas/PushedAuthorizationResponse'
         "400":
           description: Parsing body failed
-  /api/authorization:
+  /authorize:
     get:
       tags:
         - Authorization
@@ -76,14 +78,14 @@ paths:
       parameters:
         - name: client_id
           in: query
-          required: false
+          required: true
           style: form
           explode: true
           schema:
             $ref: '#/components/schemas/ClientId'
         - name: request_uri
           in: query
-          required: false
+          required: true
           style: form
           explode: true
           schema:
@@ -96,6 +98,7 @@ paths:
               schema:
                 type: string
                 x-content-type: text/html
+  /api/authorize:
     post:
       tags:
         - Authorization
@@ -138,13 +141,23 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/TokenResponse'
+  /login:
+    get:
+      tags:
+        - Authentication
+      summary: Login form
+      description: Page with login form.
+      operationId: getLoginForm
+      responses:
+        "200":
+          description: Ok
   /api/login:
     post:
       tags:
         - Authentication
-      summary: Login
-      description: Sends credentials to login.
-      operationId: postLogin
+      summary: Login Action
+      description: Validates Login credentials and issues session cookie.
+      operationId: postLoginCredentials
       requestBody:
         $ref: '#/components/requestBodies/AuthenticationRequest'
       responses:
@@ -160,6 +173,8 @@ paths:
                 example: gh2KkXwYLsiGVx3A922JiaTYjbMERa4S
         "401":
           description: Invalid Credentials
+        "500":
+          description: Internal server error
 components:
   schemas:
     DiscoveryDocument:
@@ -568,20 +583,22 @@ components:
         id_token: id_token
         expires_in: 0
     BasicCredentials:
-      required:
-        - password
-        - username
       type: object
       properties:
         username:
           $ref: '#/components/schemas/Username'
         password:
           $ref: '#/components/schemas/Password'
+      required:
+        - password
+        - username
     Username:
       type: string
+      example: john
     Password:
       type: string
       format: password
+      example: SuperSecret!
   requestBodies:
     PushedAuthorizationRequest:
       description: The Pushed Authorization Request Body
@@ -592,9 +609,6 @@ components:
     AuthorizationRequest:
       description: The Authorization Request Body
       content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/AuthorizationRequest'
         application/x-www-form-urlencoded:
           schema:
             $ref: '#/components/schemas/AuthorizationRequest'

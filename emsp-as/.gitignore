@@ -1,5 +1,1 @@
-go.sum
-server
-keys/
-config/
-!.env
+.env
