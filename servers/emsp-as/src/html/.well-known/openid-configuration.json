@@ -1,7 +1,7 @@
 {
-  "pushed_authorization_request_endpoint": "https://as.oidcharge.primbs.dev/api/par",
+  "pushed_authorization_request_endpoint": "https://as.oidcharge.primbs.dev/api/par.php",
   "jwks_uri": "https://as.oidcharge.primbs.dev/api/jwks",
   "issuer": "https://as.oidcharge.primbs.dev",
-  "authorization_endpoint": "https://as.oidcharge.primbs.dev/api/authorization",
-  "token_endpoint": "https://as.oidcharge.primbs.dev/api/token"
+  "authorization_endpoint": "https://as.oidcharge.primbs.dev/api/authorization.php",
+  "token_endpoint": "https://as.oidcharge.primbs.dev/api/token.php"
 }
