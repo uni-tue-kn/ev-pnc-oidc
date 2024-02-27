@@ -22,7 +22,7 @@ services:
       - --entrypoints.websecure.http.tls=true
       # Configure Let's Encrypt with DNS challenge
       - --entrypoints.websecure.http.tls.certresolver=letsencrypt
-      - --certificatesresolvers.letsencrypt.acme.email=jonas.primbs@uni-tuebingen.de
+      - --certificatesresolvers.letsencrypt.acme.email=${LETS_ENCRYPT_EMAIL}
       - --certificatesresolvers.letsencrypt.acme.storage=/etc/traefik/acme/acme.json
       - --certificatesresolvers.letsencrypt.acme.dnschallenge.provider=inwx
       - --certificatesresolvers.letsencrypt.acme.dnschallenge.resolvers=1.1.1.1:53,8.8.8.8:53
@@ -45,7 +45,6 @@ services:
       - .secrets/acme:/etc/traefik/acme
   
   # eMSP Authorization Server
-  # Available on https://as.oidcharge.primbs.dev/
   as-http:
     image: nginx:1.25-alpine
     depends_on:
@@ -57,7 +56,7 @@ services:
     labels:
       - traefik.enable=true
       - traefik.http.routers.emsp-as.entrypoints=web,websecure
-      - traefik.http.routers.emsp-as.rule=Host(`as.oidcharge.primbs.dev`)
+      - traefik.http.routers.emsp-as.rule=Host(`${AUTHORIZATION_SERVER_DOMAIN}`)
     volumes:
       - ./emsp-as/src:/var/www
       - ./emsp-as/nginx.conf:/etc/nginx/conf.d/default.conf
@@ -74,7 +73,6 @@ services:
       - ./emsp-as/src:/var/www
 
   # eMSP Backend to request X.509 certificates
-  # Available on https://emsp.oidcharge.primbs.dev/
   emsp-backend:
     build:
       context: ./emsp-backend
@@ -87,8 +85,8 @@ services:
     networks:
       - proxy
     environment:
-      TRUSTED_ISSUER: https://as.oidcharge.primbs.dev
-      TRUSTED_AUDIENCE: emsp_backend
+      TRUSTED_ISSUER: https://${AUTHORIZATION_SERVER_DOMAIN}
+      TRUSTED_AUDIENCE: ${TRUSTED_AUDIENCE}
       JWKS_URI: http://as-http:8080/api/jwks
       REQUIRED_SCOPES: csr
       CSR_DIR: /app/csr
@@ -98,42 +96,19 @@ services:
     labels:
       - traefik.enable=true
       - traefik.http.routers.emsp-backend.entrypoints=web,websecure
-      - traefik.http.routers.emsp-backend.rule=Host(`emsp.oidcharge.primbs.dev`)
+      - traefik.http.routers.emsp-backend.rule=Host(`${EMSP_BACKEND_DOMAIN}`)
       # # JWT Bearer Authorization:
       # - traefik.http.routers.emsp-backend.middlewares=emsp-backend@docker
-      # - traefik.http.middlewares.emsp-backend.plugin.jwt.issuers=https://as.oidcharge.primbs.dev
-      # - traefik.http.middlewares.emsp-backend.plugin.jwt.require.aud=emsp_backend
-      # - traefik.http.middlewares.emsp-backend.plugin.jwt.require.iss=https://as.oidcharge.primbs.dev
+      # - traefik.http.middlewares.emsp-backend.plugin.jwt.issuers=https://${AUTHORIZATION_SERVER_DOMAIN}
+      # - traefik.http.middlewares.emsp-backend.plugin.jwt.require.aud=${TRUSTED_AUDIENCE}
+      # - traefik.http.middlewares.emsp-backend.plugin.jwt.require.iss=https://${AUTHORIZATION_SERVER_DOMAIN}
       # - traefik.http.middlewares.emsp-backend.plugin.jwt.require.scopes=csr
     volumes:
       - .secrets/ca:/app/ca
       - .secrets/csr:/app/csr
       - .secrets/crt:/app/crt
 
-  # # EV Backend
-  # # Available on http://ev.localhost/
-  # ev-backend:
-  #   build:
-  #     context: ./ev-backend
-  #     dockerfile: Dockerfile
-  #   restart: unless-stopped
-  #   depends_on:
-  #     - proxy
-  #   networks:
-  #     - proxy
-  #   labels:
-  #     - traefik.enable=true
-  #     - traefik.http.routers.ev-backend.entrypoints=web
-  #     - traefik.http.routers.ev-backend.rule=Host(`ev.localhost`)
-  #   environment:
-  #     CSR_ENDPOINT: https://emsp.oidcharge.primbs.dev
-  #     OUTPUT_FILE: /output/cc.cer
-  #   volumes:
-  #     - ./secrets/cc_output:/output
-  #     - ./ev-backend/config:/app/config
-
   # User Agent for Certificate Provisioning
-  # Available on https://ua.oidcharge.primbs.dev/
   user-agent:
     build:
       context: ./user-agent
@@ -146,7 +121,7 @@ services:
     labels:
       - traefik.enable=true
       - traefik.http.routers.user-agent.entrypoints=web,websecure
-      - traefik.http.routers.user-agent.rule=Host(`ua.oidcharge.primbs.dev`)
+      - traefik.http.routers.user-agent.rule=Host(`${USER_AGENT_DOMAIN}`)
 
 secrets:
   # INWX Credentials for DNS Challenge
