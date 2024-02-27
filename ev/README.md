@@ -4,6 +4,12 @@ The software running on the Electric Vehicle.
 The software is tested on a Raspberry Pi 5.
 
 
+## Services Overview
+
+- [EV Backend](./ev-backend/README.md): The server on the EV which requests contract certificates via the User Agent.
+- [BLE Proxy](./ble-proxy/README.md): The Bluetooth Low Energy Server which proxies Bluetooth requests to the EV Backend.
+
+
 ## Requirements
 
 - **Hardware**: [Raspberry Pi 5](https://www.raspberrypi.com/products/raspberry-pi-5/) + 32 GB MicroSD card
