@@ -17,12 +17,16 @@ The software is tested on a Raspberry Pi 5.
 ```bash
 bash <(https://raw.githubusercontent.com/uni-tue-kn/ev-pnc-oidc/main/ev/setup.sh)
 ```
-3. Clone [this repository](https://github.com/uni-tue-kn/ev-pnc-oidc) and move into the cloned `ev` directory:
+3. Reboot the device:
+```bash
+sudo reboot
+```
+4. Clone [this repository](https://github.com/uni-tue-kn/ev-pnc-oidc) and move into the cloned `ev` directory:
 ```bash
 git clone https://github.com/uni-tue-kn/ev-pnc-oidc.git
 cd ev-pnc-oidc/ev
 ```
-4. Execute EV software:
+5. Execute EV software:
 ```bash
-docker-compose up
+./run.sh
 ```

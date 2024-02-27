@@ -26,12 +26,12 @@ services:
     build:
       context: ./ble-proxy
       dockerfile: Dockerfile
+    privileged: true
     restart: unless-stopped
     networks:
       - ble_proxy
     environment:
       DEVICE_NAME: MyEV
-      
 
   # EV Backend
   # Available on http://ev.localhost/
