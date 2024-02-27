@@ -6,27 +6,27 @@ services:
     networks:
       - proxy
     ports:
-      - 80:80/tcp
-      - 443:443/tcp
+      - 80:80/tcp   # HTTP
+      - 443:443/tcp # HTTPS
     environment:
-      # Access Credentials for DNS Challenge with INWX
+      # Access credentials for DNS Challenge with INWX
       INWX_USERNAME_FILE: /run/secrets/inwx_username
       INWX_PASSWORD_FILE: /run/secrets/inwx_password
       INWX_SHARED_SECRET_FILE: /run/secrets/inwx_secret
     command:
       # Enable access log
       - --accesslog=true
-      # Configure HTTP and HTTPS Entrypoints
+      # Configure HTTP and HTTPS entrypoints
       - --entrypoints.web.address=:80
       - --entrypoints.websecure.address=:443
       - --entrypoints.websecure.http.tls=true
-      # Configure Let's Encrypt with DNS Challenge
+      # Configure Let's Encrypt with DNS challenge
       - --entrypoints.websecure.http.tls.certresolver=letsencrypt
       - --certificatesresolvers.letsencrypt.acme.email=jonas.primbs@uni-tuebingen.de
       - --certificatesresolvers.letsencrypt.acme.storage=/etc/traefik/acme/acme.json
       - --certificatesresolvers.letsencrypt.acme.dnschallenge.provider=inwx
       - --certificatesresolvers.letsencrypt.acme.dnschallenge.resolvers=1.1.1.1:53,8.8.8.8:53
-      # Enable Docker Provider
+      # Enable Docker provider
       - --providers.docker=true
       - --providers.docker.endpoint=unix:///var/run/docker.sock
       - --providers.docker.exposedbydefault=false
@@ -116,6 +116,7 @@ services:
       - .secrets/crt:/app/crt
 
   # EV Backend
+  # Available on http://ev.localhost/
   ev-backend:
     build:
       context: ./ev-backend
@@ -130,10 +131,10 @@ services:
       - traefik.http.routers.ev-backend.entrypoints=web
       - traefik.http.routers.ev-backend.rule=Host(`ev.localhost`)
     environment:
-      - CSR_ENDPOINT=http://emsp-backend
+      - CSR_ENDPOINT=https://emsp.oidcharge.primbs.dev
       - OUTPUT_FILE=/output/cc.cer
     volumes:
-      - cc_output:/output
+      - ./secrets/cc_output:/output
       - ./ev-backend/config:/app/config
 
   # User Agent for Certificate Provisioning

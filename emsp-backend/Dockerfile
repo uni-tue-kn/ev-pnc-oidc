@@ -1,14 +1,14 @@
-# Build container
-FROM golang:1.21 AS build
+# Create a build container
+FROM golang:1.22-alpine AS build
 
 # Update packages
-RUN apt update && apt upgrade -y
+RUN apk update && apk upgrade
 
 # Copy source files
 WORKDIR /go/src
-COPY go/ ./go
-COPY main.go .
-COPY go.mod .
+COPY go/ ./go/
+COPY main.go ./
+COPY go.mod ./
 
 # Set build commands
 ENV CGO_ENABLED=0
@@ -20,16 +20,23 @@ RUN go get -d -v ./...
 RUN go build -a -installsuffix cgo -o server .
 
 
-# Runtime container
+# Create a runtime container
 FROM alpine AS runtime
 
-# Update packages and install openssl
-RUN apk upgrade --update-cache --available && apk add openssl
+# Update packages
+RUN apk update && apk upgrade
+# Install OpenSSL
+RUN apk add openssl
 
-# Create app directory and copy required executable and config files
+# Create working directory /app
 WORKDIR /app
-COPY --from=build /go/src/server .
+
+# Copy built server
+COPY --from=build /go/src/server ./
+
+# Copy config files
 COPY ./config/ ./config
+# Copy scripts
 COPY ./scripts/ ./scripts
 
 # Set default environment variables
