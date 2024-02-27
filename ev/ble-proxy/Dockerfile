@@ -1,9 +1,21 @@
 FROM python:3.11
 
-RUN apt-get update && apt-get upgrade -y && apt-get install -y dbus bluez systemctl python3-gi python3-docutils libdbus-1-dev libudev-dev libical-dev libreadline-dev libcairo2-dev libxt-dev libgirepository1.0-dev mosquitto mosquitto-clients cmake
+# Update packages
+RUN apt-get update
+RUN apt-get upgrade -y
+
+# Install Python 3
+RUN apt-get install -y python3 python3-pip python3-gi python3-docutils
+RUN apt-get install -y dbus bluez cmake systemctl libdbus-1-dev libudev-dev libical-dev libreadline-dev libcairo2-dev libxt-dev libgirepository1.0-dev
+RUN apt-get install -y mosquitto mosquitto-clients
+
+# sudo apt install build-essential libssl-dev libffi-dev python3-dev
+
+# Install Python libraries
 RUN pip3 install --upgrade setuptools
 RUN pip3 install pycairo PyGObject dbus-python git+https://github.com/manylabs/yaglib.git paho-mqtt requests
 
+# Copy Bluetooth service
 COPY ./bluetooth.service /lib/systemd/system/bluetooth.service
 
 # Copy app
@@ -11,6 +23,7 @@ WORKDIR /usr/src/app
 COPY ./entrypoint.sh ./entrypoint.sh
 RUN chmod +x ./entrypoint.sh
 
+# Run Bluetooth LE Proxy
 ENTRYPOINT [ "/usr/src/app/entrypoint.sh" ]
 
 

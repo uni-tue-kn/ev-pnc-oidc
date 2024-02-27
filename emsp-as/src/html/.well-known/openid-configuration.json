@@ -1,7 +1,0 @@
-{
-  "pushed_authorization_request_endpoint": "https://op.example.com/api/par",
-  "jwks_uri": "https://op.example.com/api/jwks",
-  "issuer": "https://op.example.com",
-  "authorization_endpoint": "https://op.example.com/api/authorization",
-  "token_endpoint": "https://op.example.com/api/token"
-}

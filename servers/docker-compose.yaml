@@ -99,38 +99,38 @@ services:
       - traefik.enable=true
       - traefik.http.routers.emsp-backend.entrypoints=web,websecure
       - traefik.http.routers.emsp-backend.rule=Host(`emsp.oidcharge.primbs.dev`)
-      # JWT Bearer Authorization:
-      - traefik.http.routers.emsp-backend.middlewares=emsp-backend@docker
-      - traefik.http.middlewares.emsp-backend.plugin.jwt.issuers=https://as.oidcharge.primbs.dev
-      - traefik.http.middlewares.emsp-backend.plugin.jwt.require.aud=emsp_backend
-      - traefik.http.middlewares.emsp-backend.plugin.jwt.require.iss=https://as.oidcharge.primbs.dev
-      - traefik.http.middlewares.emsp-backend.plugin.jwt.require.scopes=csr
+      # # JWT Bearer Authorization:
+      # - traefik.http.routers.emsp-backend.middlewares=emsp-backend@docker
+      # - traefik.http.middlewares.emsp-backend.plugin.jwt.issuers=https://as.oidcharge.primbs.dev
+      # - traefik.http.middlewares.emsp-backend.plugin.jwt.require.aud=emsp_backend
+      # - traefik.http.middlewares.emsp-backend.plugin.jwt.require.iss=https://as.oidcharge.primbs.dev
+      # - traefik.http.middlewares.emsp-backend.plugin.jwt.require.scopes=csr
     volumes:
       - .secrets/ca:/app/ca
       - .secrets/csr:/app/csr
       - .secrets/crt:/app/crt
 
-  # EV Backend
-  # Available on http://ev.localhost/
-  ev-backend:
-    build:
-      context: ./ev-backend
-      dockerfile: Dockerfile
-    restart: unless-stopped
-    depends_on:
-      - proxy
-    networks:
-      - proxy
-    labels:
-      - traefik.enable=true
-      - traefik.http.routers.ev-backend.entrypoints=web
-      - traefik.http.routers.ev-backend.rule=Host(`ev.localhost`)
-    environment:
-      CSR_ENDPOINT: https://emsp.oidcharge.primbs.dev
-      OUTPUT_FILE: /output/cc.cer
-    volumes:
-      - ./secrets/cc_output:/output
-      - ./ev-backend/config:/app/config
+  # # EV Backend
+  # # Available on http://ev.localhost/
+  # ev-backend:
+  #   build:
+  #     context: ./ev-backend
+  #     dockerfile: Dockerfile
+  #   restart: unless-stopped
+  #   depends_on:
+  #     - proxy
+  #   networks:
+  #     - proxy
+  #   labels:
+  #     - traefik.enable=true
+  #     - traefik.http.routers.ev-backend.entrypoints=web
+  #     - traefik.http.routers.ev-backend.rule=Host(`ev.localhost`)
+  #   environment:
+  #     CSR_ENDPOINT: https://emsp.oidcharge.primbs.dev
+  #     OUTPUT_FILE: /output/cc.cer
+  #   volumes:
+  #     - ./secrets/cc_output:/output
+  #     - ./ev-backend/config:/app/config
 
   # User Agent for Certificate Provisioning
   # Available on https://ua.oidcharge.primbs.dev/
