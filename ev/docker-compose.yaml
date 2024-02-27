@@ -1,25 +1,37 @@
 services:
-  # Reverse Proxy as HTTP/HTTPS Ingress
-  proxy:
-    image: traefik:2.11
+  # # Reverse Proxy as HTTP Ingress
+  # proxy:
+  #   image: traefik:2.11
+  #   restart: unless-stopped
+  #   networks:
+  #     - proxy
+  #   ports:
+  #     - 80:80/tcp   # HTTP
+  #   command:
+  #     # Enable access log
+  #     - --accesslog=true
+  #     # Configure HTTP and HTTPS entrypoints
+  #     - --entrypoints.web.address=:80
+  #     # Enable Docker provider
+  #     - --providers.docker=true
+  #     - --providers.docker.endpoint=unix:///var/run/docker.sock
+  #     - --providers.docker.exposedbydefault=false
+  #     - --providers.docker.network=proxy
+  #   volumes:
+  #     # Mount Docker Socket to use it as provider
+  #     - /var/run/docker.sock:/var/run/docker.sock:ro
+
+  # BLE Proxy
+  ble-proxy:
+    build:
+      context: ./ble-proxy
+      dockerfile: Dockerfile
     restart: unless-stopped
     networks:
-      - proxy
-    ports:
-      - 80:80/tcp   # HTTP
-    command:
-      # Enable access log
-      - --accesslog=true
-      # Configure HTTP and HTTPS entrypoints
-      - --entrypoints.web.address=:80
-      # Enable Docker provider
-      - --providers.docker=true
-      - --providers.docker.endpoint=unix:///var/run/docker.sock
-      - --providers.docker.exposedbydefault=false
-      - --providers.docker.network=proxy
-    volumes:
-      # Mount Docker Socket to use it as provider
-      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ble_proxy
+    environment:
+      DEVICE_NAME: MyEV
+      
 
   # EV Backend
   # Available on http://ev.localhost/
@@ -29,21 +41,23 @@ services:
       dockerfile: Dockerfile
     restart: unless-stopped
     depends_on:
-      - proxy
+      - ble-proxy
+    hostname: ev.internal
     networks:
-      - proxy
-    labels:
-      - traefik.enable=true
-      - traefik.http.routers.ev-backend.entrypoints=web
-      - traefik.http.routers.ev-backend.rule=Host(`ev.localhost`)
+      - ble_proxy
+    # labels:
+    #   - traefik.enable=true
+    #   - traefik.http.routers.ev-backend.entrypoints=web
+    #   - traefik.http.routers.ev-backend.rule=Host(`ev.internal`)
     environment:
+      PORT: 80
       CSR_ENDPOINT: https://emsp.oidcharge.primbs.dev
       OUTPUT_FILE: /output/cc.cer
     volumes:
-      - ./secrets/cc_output:/output
+      - ./.secrets/cc_output:/output
       - ./ev-backend/config:/app/config
 
 networks:
   # Network between Reverse Proxy and services
-  proxy:
+  ble_proxy:
     driver: bridge

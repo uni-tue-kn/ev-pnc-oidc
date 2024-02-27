@@ -20,8 +20,11 @@ COPY ./bluetooth.service /lib/systemd/system/bluetooth.service
 
 # Copy app
 WORKDIR /usr/src/app
+COPY ./flow-ble/ ./
 COPY ./entrypoint.sh ./entrypoint.sh
-RUN chmod +x ./entrypoint.sh
+RUN chmod 774 ./entrypoint.sh
+
+ENV DEVICE_NAME="MyEV"
 
 # Run Bluetooth LE Proxy
 ENTRYPOINT [ "/usr/src/app/entrypoint.sh" ]
