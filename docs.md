@@ -251,6 +251,7 @@ https://user-agent.example.com/redirect?code=YZZgOg66fJ1Ix3rS8HfREhUzZTJa9u4f0LW
 
 ## 5. Request a Contract Certificate
 
+
 ### 5.1. User Agent sends a Confirmation Request to the EV Backend
 
 - The User Agent sends a HTTP POST Request via BLE to the EV Backend.
