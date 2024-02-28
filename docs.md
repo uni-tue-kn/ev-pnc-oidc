@@ -243,7 +243,11 @@ https://authorization-server.example.com/authorize?client_id=123456789012345&req
 ### 4.4. Send Authorization Response
 
 - The Authorization Server redirects the user to the Redirect URI from the Pushed Authorization Request.
-- This request contains the authorization code in the `code` Query Parameter: `https://oem-app.pnc.primbs.dev/authorize?code=b0d93df4-cc6c-49e3-8388-f30332b4b497`
+- This request contains the authorization code in the `code` Query Parameter:
+```
+https://user-agent.example.com/redirect?code=YZZgOg66fJ1Ix3rS8HfREhUzZTJa9u4f0LWtAHR_yB4
+```
+
 
 ## 5. Request a Contract Certificate
 
