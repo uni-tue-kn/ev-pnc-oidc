@@ -4,7 +4,7 @@
   if (session_status() !== PHP_SESSION_ACTIVE) {
     http_response_code(302);
     $url = urlencode('http://' . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI']);
-    header('Location: http://' . $_SERVER['HTTP_HOST'] . '/login.php?next=' . $url);
+    header('Location: http://' . $_SERVER['HTTP_HOST'] . '/login?next=' . $url);
     exit;
   }
 
@@ -64,7 +64,7 @@
     <title>Authorize | eMSP Authorization Server</title>
   </head>
   <body>
-    <form action="/api/authorize.php" method="post">
+    <form action="/api/authorize" method="post">
       <fieldset>
         <legend>Authorize EV:</legend>
 <?php foreach ($scopes as &$scope) : ?>

@@ -17,8 +17,8 @@ services:
       # Enable access log
       - --accesslog=true
       # Configure HTTP and HTTPS entrypoints
-      - --entrypoints.web.address=:80
-      - --entrypoints.websecure.address=:443
+      - --entrypoints.web.address=:80/tcp
+      - --entrypoints.websecure.address=:443/tcp
       - --entrypoints.websecure.http.tls=true
       # Configure Let's Encrypt with DNS challenge
       - --entrypoints.websecure.http.tls.certresolver=letsencrypt
@@ -31,10 +31,11 @@ services:
       - --providers.docker.endpoint=unix:///var/run/docker.sock
       - --providers.docker.exposedbydefault=false
       - --providers.docker.network=proxy
-      # Enable JWT Plugin
-      - --experimental.plugins.jwt.modulename=github.com/Brainnwave/jwt-middleware
-      - --experimental.plugins.jwt.version=v1.1.8
+      # # Enable JWT Plugin
+      # - --experimental.plugins.jwt.modulename=github.com/Brainnwave/jwt-middleware
+      # - --experimental.plugins.jwt.version=v1.1.8
     secrets:
+      # Access credentials for DNS Challenge with INWX
       - inwx_username
       - inwx_password
       - inwx_secret
@@ -42,35 +43,35 @@ services:
       # Mount Docker Socket to use it as provider
       - /var/run/docker.sock:/var/run/docker.sock:ro
       # Mount certificates for persistency
-      - .secrets/acme:/etc/traefik/acme
+      - .secrets/acme:/etc/traefik/acme:rw
   
   # eMSP Authorization Server
   as-http:
-    image: nginx:1.25-alpine
+    image: nginx:1.24-alpine
     depends_on:
       - proxy
       - as-php
     networks:
       - proxy
-      - php_fpm
     labels:
       - traefik.enable=true
       - traefik.http.routers.emsp-as.entrypoints=web,websecure
       - traefik.http.routers.emsp-as.rule=Host(`${AUTHORIZATION_SERVER_DOMAIN}`)
     volumes:
-      - ./emsp-as/src:/var/www
-      - ./emsp-as/nginx.conf:/etc/nginx/conf.d/default.conf
+      - ./emsp-as/src:/var/www:ro
+      - ./emsp-as/nginx.conf:/etc/nginx/conf.d/default.conf:ro
   as-php:
     image: php:8.3-fpm-alpine
     networks:
-      - php_fpm
+      - proxy
     environment:
+      # Configuration
       API_KEY: ${AUTHLETE_API_KEY}
       API_SECRET: ${AUTHLETE_API_SECRET}
       CLIENT_ID: ${AUTHLETE_CLIENT_ID}
       CLIENT_SECRET: ${AUTHLETE_CLIENT_SECRET}
     volumes:
-      - ./emsp-as/src:/var/www
+      - ./emsp-as/src:/var/www:ro
 
   # eMSP Backend to request X.509 certificates
   emsp-backend:
@@ -81,10 +82,10 @@ services:
     depends_on:
       - proxy
       - as-http
-      - as-php
     networks:
       - proxy
     environment:
+      # Configuration
       TRUSTED_ISSUER: https://${AUTHORIZATION_SERVER_DOMAIN}
       TRUSTED_AUDIENCE: ${TRUSTED_AUDIENCE}
       JWKS_URI: http://as-http:8080/api/jwks
@@ -104,9 +105,9 @@ services:
       # - traefik.http.middlewares.emsp-backend.plugin.jwt.require.iss=https://${AUTHORIZATION_SERVER_DOMAIN}
       # - traefik.http.middlewares.emsp-backend.plugin.jwt.require.scopes=csr
     volumes:
-      - .secrets/ca:/app/ca
-      - .secrets/csr:/app/csr
-      - .secrets/crt:/app/crt
+      - .secrets/ca:/app/ca:rw
+      - .secrets/csr:/app/csr:rw
+      - .secrets/crt:/app/crt:rw
 
   # User Agent for Certificate Provisioning
   user-agent:
@@ -135,7 +136,4 @@ secrets:
 networks:
   # Network between Reverse Proxy and services
   proxy:
-    driver: bridge
-  # Network between Nginx and PHP
-  php_fpm:
     driver: bridge

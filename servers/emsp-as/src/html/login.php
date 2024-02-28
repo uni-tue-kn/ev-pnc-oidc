@@ -3,7 +3,7 @@
     <title>Login | eMSP Authorization Server</title>
   </head>
   <body>
-    <form action="/api/login.php" method="post">
+    <form action="/api/login" method="post">
       <fieldset>
         <legend>eMSP Login:</legend>
 <?php if (isset($_GET['next'])): ?>
