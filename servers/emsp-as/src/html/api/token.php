@@ -1,5 +1,5 @@
 <?php
-  // Handles Token Request
+  // Handles Token Request.
 
   // Load configuration.
   require('../config.php');
@@ -20,8 +20,8 @@
 
   // Check for success.
   if ($response->action !== 'OK') {
-    echo $response->resultMessage;
     http_response_code(500);
+    echo $response->resultMessage;
     exit;
   }
 

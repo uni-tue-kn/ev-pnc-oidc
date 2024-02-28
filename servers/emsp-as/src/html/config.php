@@ -10,5 +10,6 @@
     'AUTHORIZATION_ENDPOINT' => $authleteBase . '/auth/authorization',
     'AUTHORIZATION_ISSUE_ENDPOINT' => $authleteBase . '/auth/authorization/issue',
     'TOKEN_ENDPOINT' => $authleteBase . '/auth/token',
+    'JWKS_ENDPOINT' => $authleteBase . '/service/jwks/get',
   );
 ?>
