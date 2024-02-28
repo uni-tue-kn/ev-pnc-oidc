@@ -32,7 +32,7 @@
 
   // Get scopes.
   $requestObjectPayload = json_decode($response->requestObjectPayload);
-  $requestedScopes = explode(' ', $requestObjectPayload->scopes);
+  $requestedScopes = explode(' ', $requestObjectPayload->scope);
   $supportedScopes = $response->service->supportedScopes;
   $scopes = array();
   // Go through all requested scopes.
@@ -78,40 +78,39 @@
 <?php foreach ($authorizationDetails as &$authorizationDetail) : ?>
         <!-- TODO: Show authorization details here -->
 <?php switch ($authorizationDetail->type) : ?>
-<?php case 'charging_period' : ?>
+<?php case 'pnc_contract_request' : ?>
         <div>
-          <strong>Charging Period:</strong>
-          <br>
-          <label>
-            <span>Start:</span>
-            <input type="text" disabled name="charging_period_start" value="<?php echo json_decode($authorizationDetail->otherFields)->start; ?>">
-          </label>
-          -
-          <label>
-            <span>End</span>
-            <input type="text" disabled name="charging_period_end" value="<?php echo json_decode($authorizationDetail->otherFields)->end; ?>">
-          </label>
+          <div>
+            <strong>Charging Period:</strong>
+            <br>
+            <label>
+              <span>Start:</span>
+              <input type="text" disabled name="charging_period_start" value="<?php echo json_decode($authorizationDetail->otherFields)->charging_period->start; ?>">
+            </label>
+            -
+            <label>
+              <span>End</span>
+              <input type="text" disabled name="charging_period_end" value="<?php echo json_decode($authorizationDetail->otherFields)->charging_period->end; ?>">
+            </label>
+          </div>
+          <div>
+            <strong>Maximum Amount:</strong>
+            <br>
+            <label>
+              <input type="number" disabled name="maximum_amount_amount" value="<?php echo json_decode($authorizationDetail->otherFields)->maximum_amount->amount; ?>">
+              <span><?php echo json_decode($authorizationDetail->otherFields)->maximum_amount->currency; ?></span>
+            </label>
+          </div>
+          <div>
+            <strong>Maximum Transaction Amount:</strong>
+            <br>
+            <label>
+              <input type="number" disabled name="maximum_transaction_amount_amount" value="<?php echo json_decode($authorizationDetail->otherFields)->maximum_transaction_amount->amount; ?>">
+              <span><?php echo json_decode($authorizationDetail->otherFields)->maximum_transaction_amount->currency; ?></span>
+            </label>
+          </div>
         </div>
-<?php break; ?>
-<?php case 'maximum_amount' : ?>
-        <div>
-          <strong>Maximum Amount:</strong>
-          <br>
-          <label>
-            <input type="number" disabled name="maximum_amount_amount" value="<?php echo json_decode($authorizationDetail->otherFields)->amount; ?>">
-            <span><?php echo json_decode($authorizationDetail->otherFields)->currency; ?></span>
-          </label>
-        </div>
-<?php break; ?>
-<?php case 'maximum_transaction_amount' : ?>
-        <div>
-          <strong>Maximum Transaction Amount:</strong>
-          <br>
-          <label>
-            <input type="number" disabled name="maximum_transaction_amount_amount" value="<?php echo json_decode($authorizationDetail->otherFields)->amount; ?>">
-            <span><?php echo json_decode($authorizationDetail->otherFields)->currency; ?></span>
-          </label>
-        </div>
+<?php  break; ?>
 <?php endswitch; ?>
 <?php endforeach; ?>
         <input type="hidden" name="ticket" value="<?php echo $response->ticket; ?>">
