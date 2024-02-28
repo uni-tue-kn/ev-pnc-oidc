@@ -137,3 +137,4 @@ networks:
   # Network between Reverse Proxy and services
   proxy:
     driver: bridge
+    name: emsp_proxy
