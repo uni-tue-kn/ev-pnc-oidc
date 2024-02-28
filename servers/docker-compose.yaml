@@ -31,9 +31,9 @@ services:
       - --providers.docker.endpoint=unix:///var/run/docker.sock
       - --providers.docker.exposedbydefault=false
       - --providers.docker.network=proxy
-      # # Enable JWT Plugin
-      # - --experimental.plugins.jwt.modulename=github.com/Brainnwave/jwt-middleware
-      # - --experimental.plugins.jwt.version=v1.1.8
+      # Enable JWT Plugin
+      - --experimental.plugins.jwt.modulename=github.com/Brainnwave/jwt-middleware
+      - --experimental.plugins.jwt.version=v1.1.8
     secrets:
       # Access credentials for DNS Challenge with INWX
       - inwx_username
@@ -98,12 +98,12 @@ services:
       - traefik.enable=true
       - traefik.http.routers.emsp-backend.entrypoints=web,websecure
       - traefik.http.routers.emsp-backend.rule=Host(`${EMSP_BACKEND_DOMAIN}`)
-      # # JWT Bearer Authorization:
-      # - traefik.http.routers.emsp-backend.middlewares=emsp-backend@docker
-      # - traefik.http.middlewares.emsp-backend.plugin.jwt.issuers=https://${AUTHORIZATION_SERVER_DOMAIN}
-      # - traefik.http.middlewares.emsp-backend.plugin.jwt.require.aud=${TRUSTED_AUDIENCE}
-      # - traefik.http.middlewares.emsp-backend.plugin.jwt.require.iss=https://${AUTHORIZATION_SERVER_DOMAIN}
-      # - traefik.http.middlewares.emsp-backend.plugin.jwt.require.scopes=csr
+      # JWT Bearer Authorization:
+      - traefik.http.routers.emsp-backend.middlewares=emsp-backend@docker
+      - traefik.http.middlewares.emsp-backend.plugin.jwt.issuers=https://${AUTHORIZATION_SERVER_DOMAIN}
+      - traefik.http.middlewares.emsp-backend.plugin.jwt.require.client_id=${AUTHLETE_CLIENT_ID}
+      - traefik.http.middlewares.emsp-backend.plugin.jwt.require.iss=https://${AUTHORIZATION_SERVER_DOMAIN}
+      - traefik.http.middlewares.emsp-backend.plugin.jwt.require.scope=ccsr
     volumes:
       - .secrets/ca:/app/ca:rw
       - .secrets/csr:/app/csr:rw
