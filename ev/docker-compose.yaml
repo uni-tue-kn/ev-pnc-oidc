@@ -1,26 +1,4 @@
 services:
-  # # Reverse Proxy as HTTP Ingress
-  # http_proxy:
-  #   image: traefik:2.11
-  #   restart: unless-stopped
-  #   networks:
-  #     - proxy
-  #   ports:
-  #     - 80:80/tcp   # HTTP
-  #   command:
-  #     # Enable access log
-  #     - --accesslog=true
-  #     # Configure HTTP and HTTPS entrypoints
-  #     - --entrypoints.web.address=:80
-  #     # Enable Docker provider
-  #     - --providers.docker=true
-  #     - --providers.docker.endpoint=unix:///var/run/docker.sock
-  #     - --providers.docker.exposedbydefault=false
-  #     - --providers.docker.network=proxy
-  #   volumes:
-  #     # Mount Docker Socket to use it as provider
-  #     - /var/run/docker.sock:/var/run/docker.sock:ro
-
   # # BLE Proxy
   # ble-proxy:
   #   build:
@@ -29,7 +7,7 @@ services:
   #   privileged: true
   #   restart: unless-stopped
   #   networks:
-  #     - proxy
+  #     - ble_proxy
   #   environment:
   #     DEVICE_NAME: MyEV
 
@@ -39,28 +17,34 @@ services:
       context: ./ev-backend
       dockerfile: Dockerfile
     restart: unless-stopped
-    # depends_on:
-      # - ble-proxy
-      # - http_proxy
-    hostname: ${EV_BACKEND_DOMAIN}
+    hostname: ev.localhost
     networks:
       - proxy
+    # Disable this, when not testing behind the traefik reverse proxy:
     labels:
+      # Make available on HTTP behind reverse proxy
       - traefik.enable=true
       - traefik.http.routers.ev-backend.entrypoints=web
       - traefik.http.routers.ev-backend.rule=Host(`${EV_BACKEND_DOMAIN}`)
       - traefik.http.routers.ev-backend.service=ev-backend
       - traefik.http.services.ev-backend.loadbalancer.server.port=80
     environment:
+      # Configuration:
       PORT: 80
-      CSR_ENDPOINT: https://${EMSP_BACKEND_DOMAIN}
-      OUTPUT_FILE: /output/cc.cer
+      CSR_ENDPOINT: https://${EMSP_BACKEND_DOMAIN}/csr
+      OUTPUT_FILE: /app/output/cc.cer
     volumes:
-      - ./.secrets/cc_output:/output
+      # Output directory with certificates:
+      - ./.secrets:/app/output
+      # Configuration directory:
       - ./ev-backend/config:/app/config
 
 networks:
   # Network between Reverse Proxy and services
+  # # Use this, when running on the Raspberry Pi behind the Bluetooth LE proxy:
+  # proxy:
+  #   driver: bridge
+  # Use this, when testing directly via HTTP on the same device as the servers:
   proxy:
     external: true
     name: emsp_proxy
