@@ -1,6 +1,6 @@
 services:
   # # Reverse Proxy as HTTP Ingress
-  # proxy:
+  # http_proxy:
   #   image: traefik:2.11
   #   restart: unless-stopped
   #   networks:
@@ -21,37 +21,39 @@ services:
   #     # Mount Docker Socket to use it as provider
   #     - /var/run/docker.sock:/var/run/docker.sock:ro
 
-  # BLE Proxy
-  ble-proxy:
-    build:
-      context: ./ble-proxy
-      dockerfile: Dockerfile
-    privileged: true
-    restart: unless-stopped
-    networks:
-      - ble_proxy
-    environment:
-      DEVICE_NAME: MyEV
+  # # BLE Proxy
+  # ble-proxy:
+  #   build:
+  #     context: ./ble-proxy
+  #     dockerfile: Dockerfile
+  #   privileged: true
+  #   restart: unless-stopped
+  #   networks:
+  #     - proxy
+  #   environment:
+  #     DEVICE_NAME: MyEV
 
   # EV Backend
-  # Available on http://ev.localhost/
   ev-backend:
     build:
       context: ./ev-backend
       dockerfile: Dockerfile
     restart: unless-stopped
-    depends_on:
-      - ble-proxy
-    hostname: ev.internal
+    # depends_on:
+      # - ble-proxy
+      # - http_proxy
+    hostname: ${EV_BACKEND_DOMAIN}
     networks:
-      - ble_proxy
-    # labels:
-    #   - traefik.enable=true
-    #   - traefik.http.routers.ev-backend.entrypoints=web
-    #   - traefik.http.routers.ev-backend.rule=Host(`ev.internal`)
+      - proxy
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.ev-backend.entrypoints=web
+      - traefik.http.routers.ev-backend.rule=Host(`${EV_BACKEND_DOMAIN}`)
+      - traefik.http.routers.ev-backend.service=ev-backend
+      - traefik.http.services.ev-backend.loadbalancer.server.port=80
     environment:
       PORT: 80
-      CSR_ENDPOINT: https://emsp.oidcharge.primbs.dev
+      CSR_ENDPOINT: https://${EMSP_BACKEND_DOMAIN}
       OUTPUT_FILE: /output/cc.cer
     volumes:
       - ./.secrets/cc_output:/output
@@ -59,5 +61,6 @@ services:
 
 networks:
   # Network between Reverse Proxy and services
-  ble_proxy:
-    driver: bridge
+  proxy:
+    external: true
+    name: emsp_proxy
