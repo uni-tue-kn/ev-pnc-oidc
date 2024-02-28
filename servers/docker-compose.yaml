@@ -6,18 +6,14 @@ services:
     networks:
       - proxy
     ports:
-      - 80:80/tcp     # HTTP
-      - 443:443/tcp   # HTTPS
-      - 8080:8080/tcp # Traefik Dashboard
+      - 80:80/tcp   # HTTP
+      - 443:443/tcp # HTTPS
     environment:
       # Access credentials for DNS Challenge with INWX
       INWX_USERNAME_FILE: /run/secrets/inwx_username
       INWX_PASSWORD_FILE: /run/secrets/inwx_password
       INWX_SHARED_SECRET_FILE: /run/secrets/inwx_secret
     command:
-      # Enable Traefik Dashboard without authentication
-      - --api.dashboard=true
-      - --api.insecure=true
       # Enable access log
       - --accesslog=true
       # Configure HTTP and HTTPS entrypoints
