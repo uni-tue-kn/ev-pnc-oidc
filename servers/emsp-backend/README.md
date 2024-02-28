@@ -1,16 +1,19 @@
-# eMSP Backend
+# e-Mobility Service Provider Backend
 
-The Backend Server of the eMSP that signs the Contract Certificate.
+The Backend Server of the e-Mobility Service Provider (eMSP) that signs the Contract Certificate.
+
+The software is written in [Go](https://go.dev/) with no focus on implementation security.
+**Do not use this software in a productive environment!**
 
 
-## Documentation
+## 1. Documentation
 
-### REST API
+### 1.1. REST API
 
 The OpenAPI Specificatino is provided [here](./api/swagger.yaml).
 
 
-### Configuration
+### 1.2. Configuration
 
 The eMSP Backend can be configured with the following environment variables:
 
@@ -57,7 +60,7 @@ The eMSP Backend can be configured with the following environment variables:
   Default is `${CSR_FILE} ${CRT_FILE}`.
 
 
-## Development
+## 2. Development
 
 Go commands:
 
