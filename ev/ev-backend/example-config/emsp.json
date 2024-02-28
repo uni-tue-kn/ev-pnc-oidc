@@ -1,0 +1,8 @@
+[
+  {
+    "id": "sample_emsp",
+    "name": "Example eMSP",
+    "base_url": "https://as.example.com",
+    "image": "assets/openid_charge.svg"
+  }
+]
