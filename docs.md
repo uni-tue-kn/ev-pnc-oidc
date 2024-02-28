@@ -1,8 +1,6 @@
 # EV PnC Registration Flow
 
-
 ## 1. Connection Establishment
-
 
 ### 1.1. EV starts Setup
 
@@ -10,11 +8,9 @@
 - The EV generates a *Connect URL* to its OEM provider's *PnC Setup App*, containing the URL-encoded `{DEVICE_NAME}` and `{REGISTRATION_ENDPOINT}`, e.g., `https://oem-app.pnc.primbs.dev/connect?device_name=MyEV`.
 - The EV generates a QR Code which represents the *Connect URL*.
 
-
 ### 1.2. Credentials Transfer
 
 - The user starts the camera app on his smartphone and scans the QR code.
-
 
 ### 1.3. User Agent prepares Connection to EV
 
@@ -24,74 +20,51 @@
 - The User Agent then utilizes the [Web Bluetooth API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Bluetooth_API) in the browser to open a popup which shows nearby Bluetooth LE devices filtered by the `{DEVICE_NAME}`.
 - The user then selects his EV and chooses to connect to the device.
 
-
 ### 1.4. User Agent connects to EV
 
 - The User Agent then connects to the EV via Bluetooth LE which establishes an end-to-end encrypted data channel by default.
 - The User Agent then connects to the GATT [HTTP-Proxy-Service](https://www.bluetooth.com/de/specifications/specs/http-proxy-service-1-0/).
 
-
 ## 2. Configuration Request
-
 
 ### 2.1. User Agent requests eMSP Configuration
 
-- The User Agent requests a list of supported eMSPs via the BLE HTTP Proxy Service from the EV's `{EMSP_ENDPOINT}`: `http://ev.localhost/emsps`:
-
-```http
-GET /emsps HTTP/1.1
-Host: ev.localhost
-Accept: application/json
-
-```
-
+- The User Agent requests a list of supported eMSPs via the BLE HTTP Proxy Service from the EV's `{EMSP_ENDPOINT}`: `http://ev.local/emsp`
 
 ### 2.2. EV Backend looks up supported eMSPs
 
 - On the EV runs the [EV Backend Server](./ev-backend/README.md) which is addressable by the Bluetooth LE HTTP Proxy Service.
 - This EV Backend Server is an HTTP server written in [Go](https://go.dev/) which provides multiple endpoints.
-- On the `/emsps` endpoint, the EV Backend responds with a list of EMSP JSON objects which contain the base URL of the eMSPs' Authorization Server, e.g., `https://authorization-server.example.com/`, and other relevant information.
+- On the `/emsps` endpoint, the EV Backend responds with a list of EMSP JSON objects which contain the base URL of the eMSPs' Authorization Server, e.g., `https://sso.emsp1.pnc.primbs.dev/`, and other relevant information.
 - Such a list might look like this:
 ```json
 [
   {
-    "id": "sample_emsp",
-    "name": "Example eMSP",
-    "base_url": "https://authorization-server.example.com/",
-    "image": "assets/example.svg" // optional
-  }
+    "id": "oidc",
+    "name": "OpenID Charge",
+    "base_url": "https://as.example.com/",
+    "image": "assets/openid_charge.svg",  // Optional
+  },
+  {
+    "id": "ionity",
+    "name": "Ionity",
+    "base_url": "http://localhost:8080",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/e/e6/Ionity_logo_cmyk.svg",  // Optional
+  },
 ]
 ```
 - The EV might have this list cached, directly downloaded from the OEM, or hardcoded in its firmware.
 
-
 ### 2.3. EV Backend responds with eMSPs
 
-- The EV responds with the list of eMSPs via the BLE HTTP Proxy Service to the User Agent:
-
-```http
-HTTP/1.1 200 OK
-Content-Type: application/json; charset=UTF8
-
-[
-  {
-    "id": "sample_emsp",
-    "name": "Example eMSP",
-    "base_url": "https://authorization-server.example.com/",
-    "image": "assets/example.svg"
-  }
-]
-```
-
+- The EV responds with the list of eMSPs via the BLE HTTP Proxy Service to the User Agent.
 
 ### 2.4. User selects eMSP
 
 - The User Agent visualizes the eMSP list to the user.
 - The user selects his preferred eMSP.
 
-
 ## 3. Contract Provisioning Request
-
 
 ### 3.1. User modifies Permissions
 
@@ -122,63 +95,39 @@ Content-Type: application/json; charset=UTF8
   }
 }
 ```
-- The User Agent places the contract details in a Contract Provisioning Request:
+- The User Agent sends this contract details together with the selected eMSP and a redirect URI via the BLE GATT Service to the EV Backend as the body of an HTTP POST Request:
 ```json
 {
-  "emsp_id": "sample_emsp",
-  "redirect_uri": "https://user-agent.example.com/redirect",
-  "authorization_detail": {
-    "type": "pnc_contract_request",
-    "charging_period": {
-      "start": "2024-02-28T00:00:00.000Z",
-      "end": "2025-02-28T00:00:00.000Z"
+  "emsp_id": "oidcharge",
+  "redirect_uri": "https://ua.example.com/redirect",
+  "authorization_details": [
+    {
+      "type": "pnc_contract_request",
+      "charging_period": {
+        "start": "2023-07-01T00:00:00.000Z",
+        "end": "2024-07-01T00:00:00.000Z"
+      },
+      "maximum_amount": {
+        "currency": "EUR",
+        "amount": "234.56"
+      },
+      "maximum_transaction_amount": {
+        "currency": "EUR",
+        "amount": "100.00"
+      }
     },
-    "maximum_amount": {
-      "currency": "EUR",
-      "amount": "234.56"
-    },
-    "maximum_transaction_amount": {
-      "currency": "EUR",
-      "amount": "100.00"
-    }
-  }
-}
-```
-- The User Agent sends the Contract Provisioning Request via the BLE GATT Service to the EV Backend as the body of an HTTP POST Request:
-```http
-POST /cpr HTTP/1.1
-Host: ev.localhost
-Content-Type: application/json
-
-{
-  "emsp_id": "sample_emsp",
-  "redirect_uri": "https://user-agent.example.com/redirect",
-  "authorization_detail": {
-    "type": "pnc_contract_request",
-    "charging_period": {
-      "start": "2024-02-28T00:00:00.000Z",
-      "end": "2025-02-28T00:00:00.000Z"
-    },
-    "maximum_amount": {
-      "currency": "EUR",
-      "amount": "234.56"
-    },
-    "maximum_transaction_amount": {
-      "currency": "EUR",
-      "amount": "100.00"
-    }
-  }
+  ],
 }
 ```
 - The EV Backend then performs the Pushed Authorization Request as described in [Section 4](#4-authorization-request).
 
-
 ### 3.3. Pushed Authorization Request
 
+TODO
 
 #### 3.3.1. Prepare Proof Key for Code Exchange
 
-The EV generates a random string as proof key.
+TODO
 
 #### 3.3.2. Send Pushed Authorization Request
 
@@ -186,36 +135,30 @@ TODO
 
 #### 3.3.3. Register PAR
 
-The EV sends a HTTP POST Request to the Authorization Server of the eMSP:
+TODO
 ```http
 POST /par/request HTTP/1.1
 Content-Type: application/x-www-form-urlencoded
 
 response_type=code&
-client_id=123456789012345&
-client_secret=aBcDeFgHiJkLmNoPqRsTuVwXyZ0123456789-_AbCdEfGhIjKlMnOpQrStUvWxYz0123456789-_aBcDeFgHiJ&
-redirect_uri=https%3A%2F%2Fuser-agent.example.com%2Fredirect&
-code_challenge=Vun1_GO-sLNaY6BqfUZnumUV0QDzMj2TlLfpmuVoFXs&
+client_id=oem-app&
+client_secret=supersecret%21&
+redirect_uri=https%3A%2F%2Foem-app.pnc.primbs.dev%2Fauthorize&
+code_challenge=nUg2hWlS95kZ1qT8H6RbLljkD1txlP11LyKh-u3j5pE&
 code_challenge_method=S256&
 scope=ccsr&
-authorization_details=%5B%7B%22type%22%3A%22pnc_contract_request%22%2C%22locations%22%3A%5B%22https%3A%2F%2Femsp-backend.example.com%22%5D%2C%22charging_period%22%3A%7B%22start%22%3A%222024-02-28T00%3A00%3A00.000Z%22%2C%22end%22%3A%222025-02-28T00%3A00%3A00.000Z%22%7D%2C%22maximum_amount%22%3A%7B%22currency%22%3A%22EUR%22%2C%22amount%22%3A%22234.56%22%7D%2C%22maximum_transaction_amount%22%3A%7B%22currency%22%3A%22EUR%22%2C%22amount%22%3A%22100.00%22%7D%7D%5D
+authorization_details=%7B%22start%22%3A%222023-07-01T00%3A00%3A00.000Z%22%2C%22end%22%3A%222024-07-01T00%3A00%3A00.000Z%22%7D%2C%22maximumAmount%22%3A%7B%22currency%22%3A%22EUR%22%2C%22amount%22%3A%22123.45%22%7D%2C%22evId%22%3A%22uw3nT48bnt%22%7D%5D
 ```
-
 
 #### 3.3.4. Send Pushed Authorization Response
 
-The Authorization Server responds:
-
-```http
-HTTP/1.1 201 Created
-Content-Type: application/json
-
+TODO
+```json
 {
-  "request_uri": "urn:ietf:params:oauth:request_uri:bwc4JK-ESC0w8acc191e-Y1LTC2",
+  "request_uri": "urn:ietf:params:oauth:request_uri:94220043-b417-4ab4-a913-afc4dd1cc87a",
   "expires_in": 300
 }
 ```
-
 
 ### 3.4. User Agent gets Contract Provisioning Response from EV Backend
 
@@ -228,9 +171,7 @@ Content-Type: application/json
 }
 ```
 
-
 ## 4 Authorization Request
-
 
 ### 4.1. Send Authorization Request
 
