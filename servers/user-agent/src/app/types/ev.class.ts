@@ -8,19 +8,24 @@ import { EMSP } from './emsp.interface';
 import { IEvAuthorizationDetail } from './ev-authorization-detail.interface';
 
 /**
+ * The EMSP Backend Domain.
+ */
+const EMSP_BACKEND_DOMAIN='ev.localhost';
+
+/**
  * URL used to request available eMSPs.
  */
-const EMSP_URL = new URL('http://ev.local/emsps');
+const EMSP_URL = new URL(`http://${EMSP_BACKEND_DOMAIN}/emsps`);
 
 /**
  * URL used to initialize a Pushed Authorization Request.
  */
-const AUTHORIZATION_INITIALIZATION_URL = new URL('http://ev.local/cpr');
+const AUTHORIZATION_INITIALIZATION_URL = new URL(`http://${EMSP_BACKEND_DOMAIN}/cpr`);
 
 /**
  * URL used to finish authorization.
  */
-const CONFIRMATION_URL = new URL('http://ev.local/confirm');
+const CONFIRMATION_URL = new URL(`http://${EMSP_BACKEND_DOMAIN}/confirm`);
 
 export class Ev {
 
