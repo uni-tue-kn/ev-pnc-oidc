@@ -2,7 +2,7 @@
   // Handles Token Request
 
   // Load configuration.
-  require('../../config/config.php');
+  require('../config.php');
 
   // Send Token Request.
   $tokenRequest = curl_init($AUTHLETE_CONFIG['TOKEN_ENDPOINT']);

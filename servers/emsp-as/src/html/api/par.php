@@ -1,6 +1,8 @@
 <?php
-  // Handles pushed authorization request
-  require('../../config.php');
+  // Handles pushed authorization request.
+
+  // Load configuration.
+  require('../config.php');
 
   // Register pushed authorization request.
   $par = curl_init($AUTHLETE_CONFIG['PAR_ENDPOINT']);
@@ -17,13 +19,13 @@
   $response = json_decode(curl_exec($par));
 
   // Check for success.
-  if ($response['action'] !== 'CREATED') {
+  if ($response->action !== 'CREATED') {
     http_response_code(500);
     exit;
   }
 
   // Return response.
-  http_response_code(200);
+  http_response_code(201);
   header('content-type: application/json');
-  echo $response['responseContent'];
+  echo $response->responseContent;
 ?>

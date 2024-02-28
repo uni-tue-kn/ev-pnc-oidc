@@ -245,7 +245,7 @@ export class ConnectComponent implements OnInit {
    * Parses the authorization options from the form.
    * @returns Parsed authorization options.
    */
-  private getAuthorizationDetails(): IEvAuthorizationDetail {
+  private getAuthorizationDetail(): IEvAuthorizationDetail {
     return new EvAuthorizationDetail(
       {
         start: this.authorizationOptionsFormGroup.controls.chargingPeriodStart.value!,
@@ -285,7 +285,7 @@ export class ConnectComponent implements OnInit {
       this.waitForContractProvisioningResponse = true;
       const contractProvisioningResponse = await this.connectedEv.requestContractProvisioning(
         this.selectedEmsp,
-        this.getAuthorizationDetails(),
+        this.getAuthorizationDetail(),
       );
       this.waitForContractProvisioningResponse = false;
 

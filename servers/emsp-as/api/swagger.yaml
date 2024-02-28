@@ -368,6 +368,8 @@ components:
           $ref: '#/components/schemas/Scope'
         client_id:
           $ref: '#/components/schemas/ClientId'
+        client_secret:
+          $ref: '#/components/schemas/ClientSecret'
         state:
           $ref: '#/components/schemas/State'
         code_challenge:
@@ -381,6 +383,7 @@ components:
         - redirect_uri
         - scope
         - client_id
+        - client_secret
         - code_challenge
         - code_challenge_method
         - authorization_details
@@ -440,7 +443,7 @@ components:
       type: string
       description: The Request URI of a Pushed Authorization Request.
       format: uri
-      example: urn:example:bwc4JK-ESC0w8acc191e-Y1LTC2
+      example: urn:ietf:params:oauth:request_uri:bwc4JK-ESC0w8acc191e-Y1LTC2
     ClientId:
       type: string
     ClientSecret:
@@ -465,30 +468,20 @@ components:
       x-schema-name: AuthorizationDetails
     AuthorizationDetail:
       required:
-        - actions
-        - chargingPeriod
-        - locations
-        - maximumAmount
-        - maximumTransactionAmount
+        - charging_period
+        - maximum_amount
+        - maximum_transaction_amount
         - type
       type: object
       properties:
         type:
           type: string
           example: pnc_contract_request
-        actions:
-          $ref: '#/components/schemas/Actions'
-        locations:
-          type: array
-          items:
-            type: string
-            format: uri
-            example: https://rs.example.com
-        chargingPeriod:
+        charging_period:
           $ref: '#/components/schemas/ChargingPeriod'
-        maximumAmount:
+        maximum_amount:
           $ref: '#/components/schemas/CurrencyAmount'
-        maximumTransactionAmount:
+        maximum_transaction_amount:
           $ref: '#/components/schemas/CurrencyAmount'
     Actions:
       type: array

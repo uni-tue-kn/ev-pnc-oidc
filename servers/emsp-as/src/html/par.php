@@ -1,6 +1,6 @@
 <?php
   // Load configuration
-  require('../config/config.php');
+  require('./config.php');
 
   // Register pushed authorization request.
   $pushedAuthorizationRequest = curl_init($AUTHLETE_CONFIG['PAR_ENDPOINT']);

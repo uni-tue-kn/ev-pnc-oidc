@@ -9,7 +9,7 @@
   }
 
   // Load configuration.
-  require('../config/config.php');
+  require('./config.php');
 
   // Get authorization request.
   $authorizationRequest = curl_init($AUTHLETE_CONFIG['AUTHORIZATION_ENDPOINT']);
