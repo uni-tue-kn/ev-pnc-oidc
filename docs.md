@@ -99,77 +99,122 @@
 ```json
 {
   "emsp_id": "oidcharge",
-  "redirect_uri": "https://ua.example.com/redirect",
-  "authorization_details": [
-    {
-      "type": "pnc_contract_request",
-      "charging_period": {
-        "start": "2023-07-01T00:00:00.000Z",
-        "end": "2024-07-01T00:00:00.000Z"
-      },
-      "maximum_amount": {
-        "currency": "EUR",
-        "amount": "234.56"
-      },
-      "maximum_transaction_amount": {
-        "currency": "EUR",
-        "amount": "100.00"
-      }
+  "redirect_uri": "https://user-agent.example.com/redirect",
+  "authorization_detail": {
+    "type": "pnc_contract_request",
+    "charging_period": {
+      "start": "2023-07-01T00:00:00.000Z",
+      "end": "2024-07-01T00:00:00.000Z"
     },
-  ],
+    "maximum_amount": {
+      "currency": "EUR",
+      "amount": "234.56"
+    },
+    "maximum_transaction_amount": {
+      "currency": "EUR",
+      "amount": "100.00"
+    }
+  }
 }
 ```
-- The EV Backend then performs the Pushed Authorization Request as described in [Section 4](#4-authorization-request).
+- The EV Backend then performs the Pushed Authorization Request as described in [Section 4](#4-authorization-request):
+```http
+POST /cpr HTTP/1.1
+Host: ev.localhost
+Content-Type: application/json
+
+{
+  "emsp_id": "oidcharge",
+  "redirect_uri": "https://user-agent.example.com/redirect",
+  "authorization_detail": {
+    "type": "pnc_contract_request",
+    "charging_period": {
+      "start": "2023-07-01T00:00:00.000Z",
+      "end": "2024-07-01T00:00:00.000Z"
+    },
+    "maximum_amount": {
+      "currency": "EUR",
+      "amount": "234.56"
+    },
+    "maximum_transaction_amount": {
+      "currency": "EUR",
+      "amount": "100.00"
+    }
+  }
+}
+```
+
 
 ### 3.3. Pushed Authorization Request
 
-TODO
 
 #### 3.3.1. Prepare Proof Key for Code Exchange
 
-TODO
+The EV generates a random string, called Code-Verifier, e.g.:
+```
+FGZZto2HtgeC6vAIYb50kNJNCr2AIv-jIU8rbQUpxxUtyuwEVbnXcVsmZ0Ws6IQ401Z9W_9RPNZ5sHRJOuKN7vPrggUwdR2_fgdUYNHly2zFnYMhFu6clwHPtBFT3C9Z
+```
+
+The EV then hashes the Code-Verifier with SHA-256 and encodes it Base64URL:
+```
+Vun1_GO-sLNaY6BqfUZnumUV0QDzMj2TlLfpmuVoFXs
+```
+
 
 #### 3.3.2. Send Pushed Authorization Request
 
-TODO
-
-#### 3.3.3. Register PAR
-
-TODO
+The EV generates a Pushed Authorization Request and sends it to the Pushed Authorization Request Endpoint of the eMSP's Authorization Server:
 ```http
-POST /par/request HTTP/1.1
+POST /api/par HTTP/1.1
+Host: authorization-server.example.com
 Content-Type: application/x-www-form-urlencoded
 
 response_type=code&
-client_id=oem-app&
-client_secret=supersecret%21&
+client_id=example_emsp&
+client_secret=aBcDeFgHiJKlMnOpQrStUvWxYz0123456789_-AbCdEfGhIjKlMnOpQrStUvWxYz0123456789_-aBcDeFgHiJ&
 redirect_uri=https%3A%2F%2Foem-app.pnc.primbs.dev%2Fauthorize&
 code_challenge=nUg2hWlS95kZ1qT8H6RbLljkD1txlP11LyKh-u3j5pE&
 code_challenge_method=S256&
 scope=ccsr&
-authorization_details=%7B%22start%22%3A%222023-07-01T00%3A00%3A00.000Z%22%2C%22end%22%3A%222024-07-01T00%3A00%3A00.000Z%22%7D%2C%22maximumAmount%22%3A%7B%22currency%22%3A%22EUR%22%2C%22amount%22%3A%22123.45%22%7D%2C%22evId%22%3A%22uw3nT48bnt%22%7D%5D
+authorization_details=%7B%22emsp_id%22%3A%22oidcharge%22%2C%22redirect_uri%22%3A%22https%3A%2F%2Fuser-agent.example.com%2Fredirect%22%2C%22authorization_detail%22%3A%7B%22type%22%3A%22pnc_contract_request%22%2C%22charging_period%22%3A%7B%22start%22%3A%222023-07-01T00%3A00%3A00.000Z%22%2C%22end%22%3A%222024-07-01T00%3A00%3A00.000Z%22%7D%2C%22maximum_amount%22%3A%7B%22currency%22%3A%22EUR%22%2C%22amount%22%3A%22234.56%22%7D%2C%22maximum_transaction_amount%22%3A%7B%22currency%22%3A%22EUR%22%2C%22amount%22%3A%22100.00%22%7D%7D%7D
 ```
+
 
 #### 3.3.4. Send Pushed Authorization Response
 
-TODO
+- The Authorization Server generates a request URI, valid for a few seconds:
 ```json
 {
   "request_uri": "urn:ietf:params:oauth:request_uri:94220043-b417-4ab4-a913-afc4dd1cc87a",
-  "expires_in": 300
+  "expires_in": 60
 }
 ```
+The Authorization Server responds with this request URI to the EV:
+```http
+HTTP/1.1 201 Created
+Content-Type: application/json
+
+{
+  "request_uri": "urn:ietf:params:oauth:request_uri:94220043-b417-4ab4-a913-afc4dd1cc87a",
+  "expires_in": 60
+}
+```
+
 
 ### 3.4. User Agent gets Contract Provisioning Response from EV Backend
 
 - The EV Backend responds to the User Agent via Bluetooth with the Contract Provisioning Response:
-```json
+```http
+HTTP/1.1 201 Created
+Content-Type: application/json
+
 {
-  "request_uri": "urn:example:bwc4JK-ESC0w8acc191e-Y1LTC2",
+  "request_uri": "urn:ietf:params:oauth:request_uri:94220043-b417-4ab4-a913-afc4dd1cc87a",
   "client_id": "oidcharge",
   "state": "OacnSace5b"
 }
 ```
+
 
 ## 4 Authorization Request
 
@@ -177,17 +222,23 @@ TODO
 
 - The User Agent discovers the Authorization Endpoint from the Authorization Server's well-known endpoint.
 - The User Agent opens a new tab to the Authorization Endpoint and adds the `request_uri` and `client_id` obtained from the EV.
-- The URL might look like this: `https://sso.emsp1.pnc.primbs.dev/authorize?client_id=oem-app&request_uri=urn:ietf:params:oauth:request_uri:94220043-b417-4ab4-a913-afc4dd1cc87a`
+- The URL might look like this:
+```
+https://authorization-server.example.com/authorize?client_id=123456789012345&request_uri=urn:ietf:params:oauth:request_uri:94220043-b417-4ab4-a913-afc4dd1cc87a
+```
+
 
 ### 4.2. User Sign In
 
 - In the new tab, the user authenticates with its credentials or with an active session.
+
 
 ### 4.3. Client Authorization
 
 - The Authorization Server displays the authorization details to the user.
 - The user carefully checks whether the authorization details match the expected ones.
 - The user authorizes the authorization details.
+
 
 ### 4.4. Send Authorization Response
 
