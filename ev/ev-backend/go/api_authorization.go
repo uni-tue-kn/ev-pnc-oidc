@@ -85,7 +85,7 @@ func GetDiscoveryDocument(baseUrl string) (map[string]interface{}, error) {
 
 func GetPkce() (string, string, error) {
 	// Generate random PKCE Verifier
-	pkceVerifier := GenerateRandomString(128, randomCharSet)
+	pkceVerifier := GenerateRandomString(128, pkceChallengeCharSet)
 
 	// Encode Verifier to ASCII
 	asciiEncodedVerifier := []byte(pkceVerifier)
@@ -160,15 +160,15 @@ func RequestContractProvisioning(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get resource server endpoint URL
-	resourceEp, found := emspResources[emspCreds.ClientId]
+	resourceEp, found := emspResources[emsp.Id]
 	if !found {
-		log.Printf("Resource Endpoint not found for client with ID \"" + emspCreds.ClientId + "\"")
+		log.Printf("Resource Endpoint not found for client with ID \"" + emsp.Id + "\"")
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
 	// Encode authorization details:
-	var authorizationDetailJson map[string]interface{}
+	authorizationDetailJson := make(map[string]interface{})
 	authorizationDetailJson["type"] = "pnc_contract_request"
 	authorizationDetailJson["actions"] = [1]string{
 		"contract_provisioning",
@@ -193,17 +193,16 @@ func RequestContractProvisioning(w http.ResponseWriter, r *http.Request) {
 	bodyParameters.Set("redirect_uri", cpr.RedirectUri)
 	bodyParameters.Set("scope", "ccsr")
 	bodyParameters.Set("client_id", emspCreds.ClientId)
+	bodyParameters.Set("client_secret", emspCreds.ClientSecret)
 	bodyParameters.Set("state", sessionId)
 	// PKCE parameters according to RFC 7636:
 	bodyParameters.Set("code_challenge", pkceChallenge)
 	bodyParameters.Set("code_challenge_method", "S256")
 	// RAR parameters according to RFC 9396:
-	bodyParameters.Set("authorization_details", url.QueryEscape(string(authorizationDetails)))
+	bodyParameters.Set("authorization_details", string(authorizationDetails))
 
 	// Encode body parameters to string
 	bodyString := bodyParameters.Encode()
-
-	log.Printf("Sending pushed authorization request with body \"%q\"", bodyString)
 
 	// Send PAR
 	parResponse, err := http.Post(parEndpoint, "application/x-www-form-urlencoded", strings.NewReader(bodyString))
@@ -244,6 +243,10 @@ func RequestContractProvisioning(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Write header and status code
+	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	w.WriteHeader(http.StatusCreated)
+
 	// Write serialized result
 	_, err = w.Write(resultData)
 	if err != nil {
@@ -251,10 +254,6 @@ func RequestContractProvisioning(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-
-	// Write header and status code
-	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-	w.WriteHeader(http.StatusCreated)
 }
 
 func LoadEmspResourceEps(file string) error {
@@ -424,7 +423,7 @@ func CreateCsr() (string, error) {
 	// Execute OpenSSL Command to generate CSR
 	cmd := exec.Command("./scripts/csr.sh")
 	if cmd == nil {
-		return "", errors.New("Failed to execute CSR")
+		return "", errors.New("failed to execute CSR")
 	}
 
 	// Read CSR file

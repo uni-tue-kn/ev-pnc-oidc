@@ -4,8 +4,8 @@ info:
   description: Backend of the EV written in Go.
   version: 0.1.0
 servers:
-  - url: http://localhost:8080
   - url: http://ev.localhost
+  - url: http://localhost:8080
 tags:
   - name: Discovery
     description: Endpoints related to discover relevant information.
@@ -78,25 +78,22 @@ components:
           $ref: '#/components/schemas/EmspId'
         name:
           type: string
-          example: OpenIDCharge
+          example: Example eMSP
         base_url:
           type: string
           format: uri
-          example: https://as.example.com/
+          example: https://authorization-server.example.com/
         image:
           type: string
           format: uri
+          example: assets/example.svg
       required:
         - id
         - name
         - base_url
-      example:
-        id: oidcharge
-        name: OpenIDCharge
-        base_url: https://as.example.com/
     EmspId:
       type: string
-      example: oidcharge
+      example: sample_emsp
     ContractProvisioningRequest:
       type: object
       properties:

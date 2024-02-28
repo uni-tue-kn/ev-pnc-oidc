@@ -37,7 +37,7 @@ WORKDIR /app
 COPY --from=build /go/src/server ./server
 
 # Copy config files
-COPY ./config/ ./config
+COPY ./example-config/ ./config
 # Copy scripts
 COPY ./scripts/ ./scripts
 
