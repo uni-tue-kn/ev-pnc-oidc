@@ -99,7 +99,7 @@ func GetPkce() (string, string, error) {
 	sha256Verifier := hash.Sum(nil)
 
 	// Encode the SHA-256 hash to base64url
-	pkceChallenge := base64.URLEncoding.EncodeToString(sha256Verifier)
+	pkceChallenge := strings.ReplaceAll(base64.URLEncoding.EncodeToString(sha256Verifier), "=", "")
 
 	return pkceVerifier, pkceChallenge, nil
 }
