@@ -331,27 +331,27 @@ func ConfirmAuthorization(w http.ResponseWriter, r *http.Request) {
 	tokenRequestBodyString := tokenRequestBodyParameters.Encode()
 
 	// Send Token Request to Token Endpoint.
-	tokenRequest, err := http.NewRequest("POST", tokenEndpoint, strings.NewReader(tokenRequestBodyString))
+	tokenRequest, err := http.Post(tokenEndpoint, "application/x-www-form-urlencoded", strings.NewReader(tokenRequestBodyString))
 	if err != nil {
 		log.Printf("Failed to send Token Request")
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	defer tokenRequest.Body.Close()
 
 	// Read Token response body
-	defer tokenRequest.Response.Body.Close()
-	tokenResponseBodyString, err := io.ReadAll(tokenRequest.Response.Body)
+	defer tokenRequest.Body.Close()
+	tokenResponseBodyString, err := io.ReadAll(tokenRequest.Body)
 	if err != nil {
-		log.Printf("Failed to read Token response")
+		log.Printf("Failed to read Token response: " + err.Error())
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+
 	// Parse Token response body
 	var tokenResponseBody map[string]interface{}
 	err = json.Unmarshal(tokenResponseBodyString, &tokenResponseBody)
 	if err != nil {
-		log.Printf("Failed to parse Token response")
+		log.Printf("Failed to parse Token response: " + err.Error())
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -367,36 +367,34 @@ func ConfirmAuthorization(w http.ResponseWriter, r *http.Request) {
 	// Create certificate signing request
 	csr, err := CreateCsr()
 	if err != nil {
-		log.Printf("Failed to create CSR")
+		log.Printf("Failed to create CSR: " + err.Error())
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
 	// Get CSR endpoint
 	csrEndpoint := os.Getenv("CSR_ENDPOINT")
-	if csrEndpoint != "" {
+	if csrEndpoint == "" {
 		log.Printf("CSR_ENDPOINT not defined")
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
 	// Send CSR to CSR Endpoint.
-	csrRequest, err := http.NewRequest("POST", csrEndpoint, strings.NewReader(csr))
+	csrRequest, err := http.Post(csrEndpoint, "application/pkcs10", strings.NewReader(csr))
 	if err != nil {
-		log.Printf("Failed to send Certificate Signing Request")
+		log.Printf("Failed to send Certificate Signing Request: " + err.Error())
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	defer csrRequest.Body.Close()
 	// Add request headers
-	csrRequest.Header.Add("content-type", "application/pkcs10")
 	csrRequest.Header.Add("authorization", "bearer "+accessToken)
 
 	// Read CSR response body
-	defer csrRequest.Response.Body.Close()
-	csrResponseBodyString, err := io.ReadAll(csrRequest.Response.Body)
+	defer csrRequest.Body.Close()
+	csrResponseBodyString, err := io.ReadAll(csrRequest.Body)
 	if err != nil {
-		log.Printf("Failed to read CSR response")
+		log.Printf("Failed to read CSR response: " + err.Error())
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -407,6 +405,10 @@ func ConfirmAuthorization(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+
+	// Respond with success
+	w.WriteHeader(http.StatusOK)
+
 	// Write contract certificate to file
 	err = WriteCertificate(csrResponseBodyString, certificateFile)
 	if err != nil {
@@ -414,9 +416,6 @@ func ConfirmAuthorization(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-
-	// Respond with success
-	w.WriteHeader(http.StatusOK)
 }
 
 func CreateCsr() (string, error) {
@@ -427,7 +426,7 @@ func CreateCsr() (string, error) {
 	}
 
 	// Read CSR file
-	data, err := os.ReadFile("./request.csr")
+	data, err := os.ReadFile("./output/request.csr")
 	if err != nil {
 		return "", err
 	}

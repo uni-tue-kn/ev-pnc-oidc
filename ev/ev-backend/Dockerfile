@@ -40,6 +40,9 @@ COPY --from=build /go/src/server ./server
 COPY ./example-config/ ./config
 # Copy scripts
 COPY ./scripts/ ./scripts
+RUN chmod 750 ./scripts/csr.sh
+# Copy CSR configuration
+COPY ./csr.conf ./csr.conf
 
 # Createdefault output directory.
 RUN mkdir ./output

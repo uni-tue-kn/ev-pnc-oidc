@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 # Generate Key Pair and Certificate Signing Request
-openssl req -new -newkey rsa:4096 -nodes -sha256 -config csr.conf -keyout ev.key -out ev.csr
+openssl req -new -newkey rsa:4096 -nodes -sha256 -config /app/csr.conf -keyout /app/output/ev.key -out /app/output/request.csr
