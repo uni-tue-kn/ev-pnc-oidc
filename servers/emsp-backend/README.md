@@ -18,7 +18,7 @@ The OpenAPI Specification is provided [here](./api/swagger.yaml).
 The eMSP Backend can be configured using the following environment variables:
 
 **Port `PORT`**
-  The Port that the server is listening to.
+  The port that the server is listening to.
   Default is `8080`.
 
 **CSR Directory `CSR_DIR`**
@@ -63,4 +63,14 @@ docker build --pull --rm -f ./Dockerfile -t emsp-backend:latest "./"
 
 # Run the built container on "http://localhost:8080":
 docker run -p "8080:8080" emsp-backend:latest
+```
+
+Docker compose commands (see composition [here](../docker-compose.yaml)):
+
+```bash
+# Build the container in the composition:
+docker compose build emsp-backend
+
+# Run the container in the composition:
+docker compose up emsp-backend
 ```
