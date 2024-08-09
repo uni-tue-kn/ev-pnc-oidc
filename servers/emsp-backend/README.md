@@ -20,7 +20,7 @@ The eMSP Backend can be configured with the following environment variables:
 **Port `PORT`**
   The Port that the server is listening to.
   Default is `8080`.
-
+<!-- 
 **Trusted Issuer `TRUSTED_ISSUER`**
   The URL of the trusted Authorization Server.
   Issued Access Tokens must contain this string as issuer (`iss` claim in payload).
@@ -39,7 +39,7 @@ The eMSP Backend can be configured with the following environment variables:
 **Required Scopes `REQUIRED_SCOPES`**
   Comma-separated required scopes.
   Example: `scope1,scope2`.
-  Default is `csr`.
+  Default is `csr`. -->
 
 **CSR Directory `CSR_DIR`**
   Directory to download the CSR files to.

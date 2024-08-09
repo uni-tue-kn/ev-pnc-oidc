@@ -21,7 +21,7 @@ RUN go build -a -installsuffix cgo -o server .
 
 
 # Create a runtime container
-FROM alpine AS runtime
+FROM alpine:3.20 AS runtime
 
 # Update packages
 RUN apk update && apk upgrade
@@ -31,7 +31,7 @@ RUN apk add openssl
 # Create working directory /app
 WORKDIR /app
 
-# Copy built server
+# Copy server binary
 COPY --from=build /go/src/server ./
 
 # Copy config files
@@ -41,12 +41,12 @@ COPY ./scripts/ ./scripts
 
 # Set default environment variables
 ENV PORT=8080
-ENV TRUSTED_ISSUER=http://localhost:8080
-ENV TRUSTED_AUDIENCE=emsp_backend
-ENV REQUIRED_SCOPES=csr
-ENV CSR_DIR=./csr
-ENV CRT_DIR=./crt
-ENV SIGNING_CMD=./scripts/sign-cert.sh
+# ENV TRUSTED_ISSUER=http://localhost:8080
+# ENV TRUSTED_AUDIENCE=emsp_backend
+# ENV REQUIRED_SCOPES=csr
+ENV CSR_DIR=/app/csr
+ENV CRT_DIR=/app/crt
+ENV SIGNING_CMD=/app/scripts/sign-cert.sh
 ENV SIGNING_ARGS="${CSR_FILE} ${CRT_FILE}"
 
 # Expose port

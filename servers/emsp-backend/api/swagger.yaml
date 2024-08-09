@@ -1,20 +1,38 @@
-openapi: 3.0.3
+openapi: 3.1.0
 info:
   title: eMSP Backend
-  version: 0.1.0
+  version: 1.0.0
 servers:
   - url: http://localhost:8080
   - url: https://emsp.oidcharge.primbs.dev
 tags:
-  - name: Certificate Signing Request
-    description: Endpoints related to the Certificate Signing Request.
+  - name: Info
+    description: Informative endpoints.
+  - name: Certificate signing request
+    description: Endpoints related to the certificate signing request.
 paths:
+  /:
+    get:
+      tags:
+        - Info
+      summary: Gets server info
+      description: Returns a hello message from the server.
+      operationId: index
+      responses:
+        "200":
+          description: OK
+          content:
+            text/plan:
+              schema:
+                type: string
+                example: Welcome to eMSP Backend!
+                x-content-type: text/plain
   /csr:
     post:
       tags:
         - Certificate Signing Request
-      summary: Posts a Certificate Signing Request
-      description: Returns a signed X.509 Certificate
+      summary: Posts a certificate signing request
+      description: Returns a signed X.509 certificate
       operationId: postCsr
       requestBody:
         content:
@@ -73,11 +91,11 @@ paths:
                   -----END CERTIFICATE-----
                 x-content-type: application/x-x509-user-cert
         "400":
-          description: Bad request. The request body is not a valid Certificate Signing
-            Request.
+          description: Bad request. The request body is not a valid certificate signing
+            request.
         "401":
-          description: Unauthorized. The Authorization header does not contain a valid
-            Access Token.
+          description: Unauthorized. The `Authorization` header does not contain a valid
+            access token.
         "500":
           description: Internal server error. Something went wrong.
       security:
@@ -94,4 +112,4 @@ components:
           tokenUrl: https://as.emsp.oidcharge.primbs.dev/token
           refreshUrl: https://as.emsp.oidcharge.primbs.dev/refresh
           scopes:
-            ccsr: Send Certificate Signing Requests
+            ccsr: Send certificate signing requests

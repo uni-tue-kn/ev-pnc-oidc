@@ -1,6 +1,4 @@
 .env
-.swagger-codegen-ignore
-.swagger-codegen/
 .vscode/
 api/
 go.sum
