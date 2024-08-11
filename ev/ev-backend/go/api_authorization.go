@@ -363,6 +363,7 @@ func ConfirmAuthorization(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+	log.Printf("Access Token is '" + accessToken + "'")
 
 	// Create certificate signing request
 	csr, err := CreateCsr()
