@@ -1,15 +1,36 @@
 services:
-  # # BLE Proxy
-  # ble-proxy:
-  #   build:
-  #     context: ./ble-proxy
-  #     dockerfile: Dockerfile
-  #   privileged: true
-  #   restart: unless-stopped
-  #   networks:
-  #     - ble_proxy
-  #   environment:
-  #     DEVICE_NAME: MyEV
+  # Reverse Proxy as HTTP/HTTPS Ingress
+  proxy:
+    image: traefik:2.11
+    restart: unless-stopped
+    networks:
+      - proxy
+    ports:
+      - 80:80/tcp   # HTTP
+    command:
+      # Enable access log
+      - --accesslog=true
+      # Configure HTTP entrypoint
+      - --entrypoints.web.address=:80/tcp
+      # Enable Docker provider
+      - --providers.docker=true
+      - --providers.docker.endpoint=unix:///var/run/docker.sock
+      - --providers.docker.exposedbydefault=false
+      - --providers.docker.network=proxy
+    volumes:
+      # Mount Docker Socket to use it as provider
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+  
+  # BLE Proxy
+  ble-proxy:
+    build:
+      context: ./ble-proxy
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    privileged: true
+    network_mode: host
+    environment:
+      DEVICE_NAME: MyEV
 
   # EV Backend
   ev-backend:
@@ -18,6 +39,8 @@ services:
       dockerfile: Dockerfile
     restart: unless-stopped
     hostname: ev.localhost
+    depends_on:
+      - proxy
     networks:
       - proxy
     # Disable this, when not testing behind the traefik reverse proxy:
@@ -41,10 +64,13 @@ services:
 
 networks:
   # Network between Reverse Proxy and services
-  # # Use this, when running on the Raspberry Pi behind the Bluetooth LE proxy:
-  # proxy:
-  #   driver: bridge
-  # Use this, when testing directly via HTTP on the same device as the servers:
+  # Use this, when running on the Raspberry Pi behind the Bluetooth LE proxy:
   proxy:
-    external: true
-    name: emsp_proxy
+    driver: bridge
+  # host:
+  #   external: true
+  #   driver: host
+  # # Use this, when testing directly via HTTP on the same device as the servers:
+  # proxy:
+  #   external: true
+  #   name: emsp_proxy

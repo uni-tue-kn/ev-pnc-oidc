@@ -4,11 +4,6 @@
 sudo apt-get update
 sudo apt-get upgrade -y
 sudo apt-get dist-upgrade -y
-sudo apt-get autoremove
-sudo apt-get autoclean
-
-# Update firmware
-sudo rpi-update
 
 # Install tools
 sudo apt-get install -y ca-certificates curl

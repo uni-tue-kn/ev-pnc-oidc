@@ -1,2 +1,0 @@
-paho-mqtt
-git+https://github.com/manylabs/yaglib.git
