@@ -158,12 +158,8 @@ def proxy(uri: str, protocol: str, method: str, req_headers: dict | None, req_bo
         logger.debug(f"Unknown method {method}!")
         return
 
-    # Get the status code characteristic
-    char = server.get_characteristic(HTTP_STATUS_CODE_CHARACTERISTIC_UUID)
-
     # Convert status code to uint16
     status_code = struct.pack('H', r.status_code & 0xffff)
-    # status_code = hex(r.status_code & 0xffff)
     logger.debug(f"Received status code {r.status_code} ({status_code})")
 
     # Process headers
@@ -172,6 +168,9 @@ def proxy(uri: str, protocol: str, method: str, req_headers: dict | None, req_bo
         rcv_headers.append(f"{header}: {r.headers[header]}")
     global headers
     headers = '\r\n'.join(rcv_headers)
+
+    # Get the status code characteristic
+    char = server.get_characteristic(HTTP_STATUS_CODE_CHARACTERISTIC_UUID)
 
     # Notify changed body
     char.value = b"\x01"
@@ -298,6 +297,7 @@ async def run(loop):
 
     await asyncio.sleep(3600000)
 
+    logger.debug("Stopping server...")
     await server.stop()
 
 if __name__ == '__main__':
