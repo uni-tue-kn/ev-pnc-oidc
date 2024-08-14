@@ -35,5 +35,5 @@ func GetEmspCredential(clientId string) *EmspCredential {
 type EmspCredential struct {
 	ClientId string `json:"client_id"`
 
-	ClientSecret string `json:"client_secret"`
+	// ClientSecret string `json:"client_secret"`
 }

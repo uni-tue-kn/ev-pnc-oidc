@@ -126,7 +126,7 @@ def write_request(characteristic: BlessGATTCharacteristic, value: Any, **kwargs)
                 logger.debug(f"Sending {code['method']} request via {code['protocol']}...")
                 req_headers = None
                 if headers != None:
-                    header_rows = headers.split('\r\n')
+                    header_rows = headers.split('|')
                     req_headers = {}
                     for row in header_rows:
                         header_pair = row.split(': ')
@@ -167,7 +167,7 @@ def proxy(uri: str, protocol: str, method: str, req_headers: dict | None, req_bo
     for header in r.headers:
         rcv_headers.append(f"{header}: {r.headers[header]}")
     global headers
-    headers = '\r\n'.join(rcv_headers)
+    headers = '|'.join(rcv_headers)
 
     # Get the status code characteristic
     char = server.get_characteristic(HTTP_STATUS_CODE_CHARACTERISTIC_UUID)

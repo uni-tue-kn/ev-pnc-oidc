@@ -1,8 +1,8 @@
-openapi: 3.0.3
+openapi: 3.1.0
 info:
   title: EV Backend
   description: Backend of the EV written in Go.
-  version: 0.1.0
+  version: 1.0.0
 servers:
   - url: http://ev.localhost
   - url: http://localhost:8080
@@ -53,22 +53,22 @@ paths:
           description: eMSP ID not found
         "500":
           description: Internal server error
-  /confirm:
-    post:
-      tags:
-        - Authorization
-      summary: Finishes the authorization
-      description: Transfers the Authorization Code to the EV which finishes the authorization process.
-      operationId: confirmAuthorization
-      requestBody:
-        $ref: '#/components/requestBodies/ConfirmationRequest'
-      responses:
-        "200":
-          description: OK
-        "404":
-          description: Unknown state
-        "500":
-          description: Internal server error
+  # /confirm:
+  #   post:
+  #     tags:
+  #       - Authorization
+  #     summary: Finishes the authorization
+  #     description: Transfers the Authorization Code to the EV which finishes the authorization process.
+  #     operationId: confirmAuthorization
+  #     requestBody:
+  #       $ref: '#/components/requestBodies/ConfirmationRequest'
+  #     responses:
+  #       "200":
+  #         description: OK
+  #       "404":
+  #         description: Unknown state
+  #       "500":
+  #         description: Internal server error
 components:
   schemas:
     Emsp:
@@ -99,15 +99,10 @@ components:
       properties:
         emsp_id:
           $ref: '#/components/schemas/EmspId'
-        redirect_uri:
-          type: string
-          format: uri
-          example: https://ua.example.com/redirect
         authorization_detail:
           $ref: '#/components/schemas/AuthorizationDetail'
       required:
         - emsp_id
-        - redirect_uri
         - authorization_detail
     AuthorizationDetail:
       type: object
@@ -161,38 +156,28 @@ components:
     ContractProvisioningResponse:
       type: object
       properties:
-        request_uri:
-          $ref: '#/components/schemas/RequestUri'
-        client_id:
-          $ref: '#/components/schemas/ClientId'
-        state:
-          $ref: '#/components/schemas/State'
+        user_code:
+          $ref: '#/components/schemas/UserCode'
+        verification_uri:
+          $ref: '#/components/schemas/VerificationUri'
       required:
-        - request_uri
-        - client_id
-        - state
-    RequestUri:
+        - user_code
+        - verification_uri
+    UserCode:
       type: string
-      description: The Request URI of a Pushed Authorization Request.
-      format: uri
-      example: urn:example:bwc4JK-ESC0w8acc191e-Y1LTC2
-    ClientId:
+      example: A1B2C3
+    VerificationUri:
       type: string
-      example: oidcharge
-    State:
-      type: string
-      example: OcnS3ace5b
-    ConfirmationRequest:
-      type: object
-      properties:
-        auth_code:
-          type: string
-          example: LRS7CLedX3ws5fiJO4KenKe
-        state:
-          $ref: '#/components/schemas/State'
-      required:
-        - auth_code
-        - state
+      format: url
+      example: https://authorization-server.example.com/verify
+    # ConfirmationRequest:
+    #   type: object
+    #   properties:
+    #     auth_code:
+    #       type: string
+    #       example: LRS7CLedX3ws5fiJO4KenKe
+    #   required:
+    #     - auth_code
   requestBodies:
     ContractProvisioningRequest:
       content:
