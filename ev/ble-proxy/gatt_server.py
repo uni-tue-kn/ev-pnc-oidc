@@ -99,6 +99,7 @@ def read_request(characteristic: BlessGATTCharacteristic, **kwargs) -> bytearray
         return ''.encode("utf-8")
 
 def write_request(characteristic: BlessGATTCharacteristic, value: Any, **kwargs):
+    logger.debug(f"Received write command from characteristic {characteristic.uuid}")
     global uri
     global headers
     global body
@@ -172,12 +173,12 @@ def proxy(uri: str, protocol: str, method: str, req_headers: dict | None, req_bo
     # Get the status code characteristic
     char = server.get_characteristic(HTTP_STATUS_CODE_CHARACTERISTIC_UUID)
 
-    # Notify changed body
-    char.value = b"\x01"
-    server.update_value(
-        HPS_SERVICE_UUID,
-        HTTP_STATUS_CODE_CHARACTERISTIC_UUID,
-    )
+    # # Notify changed body
+    # char.value = b"\x01"
+    # server.update_value(
+    #     HPS_SERVICE_UUID,
+    #     HTTP_STATUS_CODE_CHARACTERISTIC_UUID,
+    # )
 
     # Process body
     global body
@@ -295,7 +296,7 @@ async def run(loop):
     else:
         await trigger.wait()
 
-    await asyncio.sleep(3600000)
+    await asyncio.sleep(5)#3600000)
 
     logger.debug("Stopping server...")
     await server.stop()

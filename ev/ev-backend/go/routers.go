@@ -66,10 +66,10 @@ var routes = Routes{
 		RequestContractProvisioning,
 	},
 
-	// Route{
-	// 	"ConfirmAuthorization",
-	// 	strings.ToUpper("Post"),
-	// 	"/confirm",
-	// 	ConfirmAuthorization,
-	// },
+	Route{
+		"ConfirmAuthorization",
+		strings.ToUpper("Post"),
+		"/confirm",
+		ConfirmAuthorization,
+	},
 }

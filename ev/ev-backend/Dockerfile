@@ -44,7 +44,7 @@ RUN chmod 750 ./scripts/csr.sh
 # Copy CSR configuration
 COPY ./csr.conf ./csr.conf
 
-# Createdefault output directory.
+# Create default output directory.
 RUN mkdir ./output
 
 # Set default environment variables
