@@ -1,60 +1,41 @@
 <?php
-  // Forward to login page if not logged in.
+  // Handles device verification request.
+
+  // Check session state on validity.
   session_start();
-  if (session_status() !== PHP_SESSION_ACTIVE) {
+  if (session_status() !== PHP_SESSION_ACTIVE || !isset($_SESSION['username'])) {
     $request_url = (empty($_SERVER['HTTPS']) ? 'http' : 'https') . "://$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI]";
+    // User is not logged in -> Redirect to login
     http_response_code(302);
     header('Location: /login?next=' . urlencode($request_url));
+    echo "User not logged in";
     exit;
   }
 
   // Load configuration.
-  require('../config.php');
+  require('../../config.php');
 
-  // Get authorization request.
-  $authorizationRequest = curl_init($AUTHLETE_CONFIG['AUTHORIZATION_ENDPOINT']);
-  curl_setopt($authorizationRequest, CURLOPT_POSTFIELDS, json_encode(array(
-    'parameters' => http_build_query($_GET),
+  // Get device veriifcation request.
+  $deviceVerificationRequest = curl_init($AUTHLETE_CONFIG['DEVICE_AUTHORIZATION_ENDPOINT']);
+  curl_setopt($deviceVerificationRequest, CURLOPT_POSTFIELDS, json_encode(array(
+    'userCode' => $_GET['user_code'],
   )));
-  curl_setopt($authorizationRequest, CURLOPT_HTTPHEADER, array(
-    'content-type: application/json',
-    'authorization: Basic ' . base64_encode($AUTHLETE_CONFIG['API_KEY'] . ':' . $AUTHLETE_CONFIG['API_SECRET']),
+  curl_setopt($deviceVerificationRequest, CURLOPT_HTTPHEADER, array(
+    'Content-Type: application/json',
+    'Authorization: Basic ' . base64_encode($AUTHLETE_CONFIG['API_KEY'] . ':' . $AUTHLETE_CONFIG['API_SECRET']),
   ));
-  curl_setopt($authorizationRequest, CURLOPT_RETURNTRANSFER, true);
-  $response = json_decode(curl_exec($authorizationRequest));
+  curl_setopt($deviceVerificationRequest, CURLOPT_RETURNTRANSFER, true);
+  $response = json_decode(curl_exec($deviceVerificationRequest));
 
   // Check for success.
-  if ($response->action !== 'INTERACTION') {
+  if ($response->action !== 'VALID') {
     echo $response->resultMessage;
     http_response_code(500);
     exit;
   }
 
   // Get scopes.
-  $requestObjectPayload = json_decode($response->requestObjectPayload);
-  $requestedScopes = explode(' ', $requestObjectPayload->scope);
-  $supportedScopes = $response->service->supportedScopes;
-  $scopes = array();
-  // Go through all requested scopes.
-  foreach ($requestedScopes as &$scope) {
-    // Find corresponding supported scope.
-    $scopeMessage = '';
-    foreach ($supportedScopes as &$supportedScope) {
-      if ($supportedScope->name === $scope) {
-        $scopeMessage = $supportedScope->description;
-        break;
-      }
-    }
-    if ($scopeMessage === '') {
-      continue;
-    }
-
-    // Add the scope item to $scopes.
-    array_push($scopes, array(
-      'name' => $scope,
-      'description' => $scopeMessage,
-    ));
-  }
+  $scopes = $response->scopes;
 
   // Get authorization details.
   $authorizationDetails = $response->authorizationDetails->elements;
@@ -64,19 +45,18 @@
     <title>Authorize | eMSP Authorization Server</title>
   </head>
   <body>
-    <form action="/api/authorize" method="post">
+    <form action="/api/device/completion" method="post">
       <fieldset>
         <legend>Authorize EV:</legend>
 <?php foreach ($scopes as &$scope) : ?>
-        <input id="scope_<?php echo $scope['name']; ?>" type="checkbox" name="scopes" required value="<?php echo $scope['name']; ?>">
-        <label for="scope_<?php echo $scope['name']; ?>">
-          <?php echo $scope['description']; ?>
+        <input id="scope_<?php echo $scope->name; ?>" type="checkbox" name="scopes" required value="<?php echo $scope->name; ?>">
+        <label for="scope_<?php echo $scope->name; ?>">
+          <?php echo $scope->description; ?>
         </label>
         <br>
 <?php endforeach; ?>
         <br>
 <?php foreach ($authorizationDetails as &$authorizationDetail) : ?>
-        <!-- TODO: Show authorization details here -->
 <?php switch ($authorizationDetail->type) : ?>
 <?php case 'pnc_contract_request' : ?>
         <div>
@@ -113,7 +93,10 @@
 <?php break; ?>
 <?php endswitch; ?>
 <?php endforeach; ?>
-        <input type="hidden" name="ticket" value="<?php echo $response->ticket; ?>">
+        <label>
+          <span>User Code:</span>
+          <input type="text" id="user_code" name="user_code" value="<?php echo $_GET['user_code']; ?>">
+        </label>
         <br>
         <input type="submit" value="Authorize">
       </fieldset>

@@ -1,8 +1,8 @@
-openapi: 3.0.3
+openapi: 3.1.0
 info:
   title: eMSP Authorization Server
-  description: Authorization Server of an e-Mobility Service Provider written in Go.
-  version: 0.1.0
+  description: Authorization Server of an e-Mobility Service Provider.
+  version: 1.0.0
 servers:
   - url: http://localhost:8080
   - url: https://as.oidcharge.primbs.dev
@@ -10,17 +10,23 @@ tags:
   - name: Discovery
     description: Endpoints related to the OIDC discovery.
   - name: Authorization
-    description: Endpoints related to the OAuth Authorization Flow.
+    description: Endpoints related to the OAuth 2.0 authorization flow.
   - name: Authentication
     description: Endpoints related to user authentication.
+  - name: Info
+    description: Informative endpoints.
+  - name: API
+    description: API Endpoints.
+  - name: UI
+    description: User Interfaces.
 paths:
   /.well-known/openid-configuration:
     get:
       tags:
         - Discovery
-      summary: Gets the OpenID Configuration
-      description: Gets the OpenID Configuration.
-      operationId: getDiscoveryDocument
+        - API
+      summary: Gets the OpenID configuration
+      description: Gets the OpenID discovery document.
       responses:
         "200":
           description: Discovery Document
@@ -32,9 +38,9 @@ paths:
     get:
       tags:
         - Discovery
+        - API
       summary: Gets the JWKS
       description: Gets the JSON Web Key Set (JWKS).
-      operationId: getJwks
       responses:
         "200":
           description: JWK Set
@@ -42,66 +48,40 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/JwkSet'
-  /api/par:
-    post:
-      tags:
-        - Authorization
-      summary: Pushed Authorization Request
-      description: Post a Pushed Authorization Request
-      operationId: postPushedAuthorizationRequest
-      requestBody:
-        $ref: '#/components/requestBodies/PushedAuthorizationRequest'
-      responses:
-        "201":
-          description: PAR Request URI created
-          headers:
-            Cache-Control:
-              description: Disables caching.
-              style: simple
-              explode: false
-              schema:
-                type: string
-                example: "no-cache, no-store"
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PushedAuthorizationResponse'
-        "400":
-          description: Parsing body failed
-  /authorize:
-    get:
-      tags:
-        - Authorization
-      summary: Authorization Frontend
-      description: Gets the frontend for Client Authorization
-      operationId: getAuthorizationFrontend
-      parameters:
-        - name: client_id
-          in: query
-          required: true
-          style: form
-          explode: true
-          schema:
-            $ref: '#/components/schemas/ClientId'
-        - name: request_uri
-          in: query
-          required: true
-          style: form
-          explode: true
-          schema:
-            $ref: '#/components/schemas/RequestUri'
-      responses:
-        "200":
-          description: Authorization UI
-          content:
-            text/html:
-              schema:
-                type: string
-                x-content-type: text/html
+        "500":
+          description: Internal server error
+  # /api/par:
+  #   post:
+  #     tags:
+  #       - Authorization
+  #       - API
+  #     summary: Pushed Authorization Request
+  #     description: Post a Pushed Authorization Request
+  #     operationId: postPushedAuthorizationRequest
+  #     requestBody:
+  #       $ref: '#/components/requestBodies/PushedAuthorizationRequest'
+  #     responses:
+  #       "201":
+  #         description: PAR Request URI created
+  #         headers:
+  #           Cache-Control:
+  #             description: Disables caching.
+  #             style: simple
+  #             explode: false
+  #             schema:
+  #               type: string
+  #               example: "no-cache, no-store"
+  #         content:
+  #           application/json:
+  #             schema:
+  #               $ref: '#/components/schemas/PushedAuthorizationResponse'
+  #       "400":
+  #         description: Parsing body failed
   /api/authorize:
     post:
       tags:
         - Authorization
+        - API
       summary: Authorization API Endpoint
       description: Post an Authorization Grant
       operationId: postAuthorizationBackend
@@ -114,6 +94,7 @@ paths:
     post:
       tags:
         - Authorization
+        - API
       summary: Token Request
       description: Post a Token Request
       operationId: postTokenRequest
@@ -141,40 +122,103 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/TokenResponse'
-  /login:
-    get:
-      tags:
-        - Authentication
-      summary: Login form
-      description: Page with login form.
-      operationId: getLoginForm
-      responses:
-        "200":
-          description: Ok
   /api/login:
     post:
       tags:
         - Authentication
-      summary: Login Action
-      description: Validates Login credentials and issues session cookie.
-      operationId: postLoginCredentials
+        - API
+      summary: Login action
+      description: Validates login credentials and issues session cookie.
       requestBody:
         $ref: '#/components/requestBodies/AuthenticationRequest'
       responses:
         "200":
-          description: Successful Authentication
+          description: Successful authentication
           headers:
             Set-Cookie:
-              description: Sets a Session Cookie.
+              description: Sets a session cookie.
               style: simple
               explode: false
               schema:
                 type: string
-                example: gh2KkXwYLsiGVx3A922JiaTYjbMERa4S
+                example: abcdefghijklmnopqrstuvwxyz0123456
+        "302":
+          description: Successful authentication with redirect
         "401":
-          description: Invalid Credentials
+          description: Invalid credentials
         "500":
           description: Internal server error
+  /:
+    get:
+      tags:
+        - Info
+        - UI
+      summary: Gets server info
+      description: Returns a hello message from the server.
+      responses:
+        "200":
+          description: OK
+          content:
+            text/plan:
+              schema:
+                type: string
+                example: Welcome to eMSP Authorization Server!
+                x-content-type: text/plain
+  /authorize:
+    get:
+      tags:
+        - Authorization
+        - UI
+      summary: Authorization Frontend
+      description: Gets the frontend for Client Authorization
+      operationId: getAuthorizationFrontend
+      parameters:
+        - name: client_id
+          in: query
+          required: true
+          style: form
+          explode: true
+          schema:
+            $ref: '#/components/schemas/ClientId'
+        - name: request_uri
+          in: query
+          required: true
+          style: form
+          explode: true
+          schema:
+            $ref: '#/components/schemas/RequestUri'
+      responses:
+        "200":
+          description: Authorization UI
+          content:
+            text/html:
+              schema:
+                type: string
+                x-content-type: text/html
+        "302":
+          description: Not authenticated
+          headers:
+            location:
+              description: Setup state based redirect
+              schema:
+                type: string
+                description: Redirect URI to login page
+                example: https://as.oidcharge.primbs.dev/login?next=https://as.oidcharge.primbs.dev/authorize
+  /login:
+    get:
+      tags:
+        - Authentication
+        - UI
+      summary: Login form
+      description: Page with the login form.
+      responses:
+        "200":
+          description: OK
+          content:
+            text/html:
+              schema:
+                type: string
+                x-content-type: text/html
 components:
   schemas:
     DiscoveryDocument:
@@ -204,11 +248,11 @@ components:
         - issuer
         - jwks_uri
       example:
-        pushed_authorization_request_endpoint: https://op.example.com/api/par
-        jwks_uri: https://op.example.com/api/jwks
-        issuer: https://op.example.com
-        authorization_endpoint: https://op.example.com/api/authorization
-        token_endpoint: https://op.example.com/api/token
+        pushed_authorization_request_endpoint: https://as.oidcharge.primbs.dev/api/par
+        jwks_uri: https://as.oidcharge.primbs.dev/api/jwks
+        issuer: https://as.oidcharge.primbs.dev
+        authorization_endpoint: https://as.oidcharge.primbs.dev/api/authorization
+        token_endpoint: https://as.oidcharge.primbs.dev/api/token
     JwkSet:
       required:
         - keys
@@ -613,6 +657,11 @@ components:
             $ref: '#/components/schemas/TokenRequest'
     AuthenticationRequest:
       description: User Login Credentials
+      parameters:
+        query:
+          next:
+            type: string
+            format: url
       content:
         application/x-www-form-urlencoded:
           schema:

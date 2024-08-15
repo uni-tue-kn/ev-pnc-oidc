@@ -2,7 +2,7 @@
   // Handles Authorization Submission.
 
   // Load configuration.
-  require('../config.php');
+  require('../../config.php');
 
   // Get authorization request.
   $authorizationRequest = curl_init($AUTHLETE_CONFIG['AUTHORIZATION_ISSUE_ENDPOINT']);
