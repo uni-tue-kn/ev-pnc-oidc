@@ -173,12 +173,12 @@ def proxy(uri: str, protocol: str, method: str, req_headers: dict | None, req_bo
     # Get the status code characteristic
     char = server.get_characteristic(HTTP_STATUS_CODE_CHARACTERISTIC_UUID)
 
-    # Notify changed body
-    char.value = b"\x01"
-    server.update_value(
-        HPS_SERVICE_UUID,
-        HTTP_STATUS_CODE_CHARACTERISTIC_UUID,
-    )
+    # # Notify changed body
+    # char.value = b"\x01"
+    # server.update_value(
+    #     HPS_SERVICE_UUID,
+    #     HTTP_STATUS_CODE_CHARACTERISTIC_UUID,
+    # )
 
     # Process body
     global body

@@ -36,6 +36,13 @@ type Session struct {
 
 var emspResources map[string]string
 
+var now time.Time
+var endTime time.Time
+var deviceCode string
+var interval uint32
+var tokenEndpoint string
+var clientId string
+
 func GenerateRandomString(length int, charset string) string {
 	random := rand.New(rand.NewSource(time.Now().UnixNano()))
 	charsetLength := len(charset)
@@ -127,6 +134,7 @@ func RequestContractProvisioning(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
 		return
 	}
+	clientId = emspCreds.ClientId
 
 	// Get discovery document
 	discoveryDocument, err := GetDiscoveryDocument(emsp.BaseUrl)
@@ -227,10 +235,13 @@ func RequestContractProvisioning(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	now := time.Now()
+	deviceCode = responseBody.DeviceCode
+
+	now = time.Now()
 	log.Printf("Now: " + now.String())
-	endTime := time.Now().Add(time.Duration(responseBody.ExpiresIn) * time.Second)
-	log.Printf("End time: " + now.String())
+	endTime = time.Now().Add(time.Duration(responseBody.ExpiresIn) * time.Second)
+	log.Printf("End time: " + endTime.String())
+	interval = responseBody.Interval
 
 	// Create and serialize response
 	result := ContractProvisioningResponse{
@@ -246,8 +257,7 @@ func RequestContractProvisioning(w http.ResponseWriter, r *http.Request) {
 
 	// Write header and status code
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-	w.WriteHeader(http.StatusCreated)
-
+	
 	// Write serialized result
 	_, err = w.Write(resultData)
 	if err != nil {
@@ -257,28 +267,48 @@ func RequestContractProvisioning(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get Token Endpoint from discovery document
-	tokenEndpoint, found := discoveryDocument["token_endpoint"].(string)
+	tokenEndpoint, found = discoveryDocument["token_endpoint"].(string)
 	if !found {
 		log.Printf("eMSP \"" + emsp.BaseUrl + "\" does not support Token Endpoint")
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
+	w.WriteHeader(http.StatusCreated)
+}
+
+func LoadEmspResourceEps(file string) error {
+	// Read emsp resource endpoint file
+	data, err := os.ReadFile(file)
+	if err != nil {
+		return err
+	}
+
+	// JSON serialize values
+	err = json.Unmarshal(data, &emspResources)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func ConfirmAuthorization(w http.ResponseWriter, r *http.Request) {
 	accessToken := ""
 
 	// Start polling:
 	for time.Now().Before(endTime) {
 		// Wait for interval
-		time.Sleep(time.Duration(responseBody.Interval) * time.Second)
+		time.Sleep(time.Duration(interval) * time.Second)
 
-		log.Printf("Polling ...");
+		log.Printf("Polling with device code " + deviceCode + "...");
 
 		// Prepare body parameters
 		tokenRequestBodyParameters := url.Values{}
 		// OAuth Authorization parameters according to RFC 6749:
 		tokenRequestBodyParameters.Set("grant_type", "urn:ietf:params:oauth:grant-type:device_code")
-		tokenRequestBodyParameters.Set("device_code", responseBody.DeviceCode)
-		tokenRequestBodyParameters.Set("client_id", emspCreds.ClientId)
+		tokenRequestBodyParameters.Set("device_code", deviceCode)
+		tokenRequestBodyParameters.Set("client_id", clientId)
 		// tokenRequestBodyParameters.Set("client_secret", emspCreds.ClientSecret)
 		// // PKCE parameters according to RFC 7636:
 		// tokenRequestBodyParameters.Set("code_verifier", session.PkceVerifier)
@@ -371,9 +401,7 @@ func RequestContractProvisioning(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Respond with success
-	w.WriteHeader(http.StatusOK)
-
+	
 	// Write contract certificate to file
 	err = WriteCertificate(csrResponseBodyString, certificateFile)
 	if err != nil {
@@ -381,30 +409,10 @@ func RequestContractProvisioning(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-
-	log.Printf("Successfully polled!");
-	return
 	
-	log.Printf("Polled!");
-}
-
-func LoadEmspResourceEps(file string) error {
-	// Read emsp resource endpoint file
-	data, err := os.ReadFile(file)
-	if err != nil {
-		return err
-	}
-
-	// JSON serialize values
-	err = json.Unmarshal(data, &emspResources)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// func ConfirmAuthorization(w http.ResponseWriter, r *http.Request) {
+	// Respond with success
+	w.WriteHeader(http.StatusOK)
+	log.Printf("Finished!");
 // 	// Parse Confirmation Request body
 // 	var confirmationRequest ConfirmationRequest
 // 	err := json.NewDecoder(r.Body).Decode(&confirmationRequest)
@@ -549,7 +557,7 @@ func LoadEmspResourceEps(file string) error {
 // 		w.WriteHeader(http.StatusInternalServerError)
 // 		return
 // 	}
-// }
+}
 
 func CreateCsr() (string, error) {
 	// Execute OpenSSL Command to generate CSR
