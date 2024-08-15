@@ -211,8 +211,9 @@ func RequestContractProvisioning(w http.ResponseWriter, r *http.Request) {
 	// Read device authorization response body
 	defer deviceAuthorizationResponse.Body.Close()
 	body, err := io.ReadAll(deviceAuthorizationResponse.Body)
+	log.Printf("Received device authorization body: " + string(body))
 	if err != nil {
-		log.Printf("Failed to read device authorization response")
+		log.Printf("Failed to read device authorization response: %s", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -263,6 +264,8 @@ func RequestContractProvisioning(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	accessToken := ""
+
 	// Start polling:
 	for time.Now().Before(endTime) {
 		// Wait for interval
@@ -273,7 +276,7 @@ func RequestContractProvisioning(w http.ResponseWriter, r *http.Request) {
 		// Prepare body parameters
 		tokenRequestBodyParameters := url.Values{}
 		// OAuth Authorization parameters according to RFC 6749:
-		tokenRequestBodyParameters.Set("grant_type", "urn:ietf:params:oauth:grant-type")
+		tokenRequestBodyParameters.Set("grant_type", "urn:ietf:params:oauth:grant-type:device_code")
 		tokenRequestBodyParameters.Set("device_code", responseBody.DeviceCode)
 		tokenRequestBodyParameters.Set("client_id", emspCreds.ClientId)
 		// tokenRequestBodyParameters.Set("client_secret", emspCreds.ClientSecret)
@@ -309,70 +312,78 @@ func RequestContractProvisioning(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// Get access token from token response body
-		accessToken, found := tokenResponseBody["access_token"].(string)
+		accessTokenData, found := tokenResponseBody["access_token"]
 		if !found {
 			log.Printf("Access Token not found in token response")
 			w.WriteHeader(http.StatusInternalServerError)
 			continue
 		}
+		accessToken = accessTokenData.(string)
 		log.Printf("Access Token is '" + accessToken + "'")
+		break
+	}
 
-		// Create certificate signing request
-		csr, err := CreateCsr()
-		if err != nil {
-			log.Printf("Failed to create CSR: " + err.Error())
-			w.WriteHeader(http.StatusInternalServerError)
-			continue
-		}
-
-		// Get CSR endpoint
-		csrEndpoint := os.Getenv("CSR_ENDPOINT")
-		if csrEndpoint == "" {
-			log.Printf("CSR_ENDPOINT not defined")
-			w.WriteHeader(http.StatusInternalServerError)
-			continue
-		}
-
-		// Send CSR to CSR Endpoint.
-		csrRequest, err := http.Post(csrEndpoint, "application/pkcs10", strings.NewReader(csr))
-		if err != nil {
-			log.Printf("Failed to send Certificate Signing Request: " + err.Error())
-			w.WriteHeader(http.StatusInternalServerError)
-			continue
-		}
-		// Add request headers
-		csrRequest.Header.Add("authorization", "bearer "+accessToken)
-
-		// Read CSR response body
-		defer csrRequest.Body.Close()
-		csrResponseBodyString, err := io.ReadAll(csrRequest.Body)
-		if err != nil {
-			log.Printf("Failed to read CSR response: " + err.Error())
-			w.WriteHeader(http.StatusInternalServerError)
-			continue
-		}
-		// Get filename of contract certificate file
-		certificateFile := os.Getenv("OUTPUT_FILE")
-		if certificateFile == "" {
-			log.Printf("OUTPUT_FILE not defined")
-			w.WriteHeader(http.StatusInternalServerError)
-			continue
-		}
-
-		// Respond with success
-		w.WriteHeader(http.StatusOK)
-
-		// Write contract certificate to file
-		err = WriteCertificate(csrResponseBodyString, certificateFile)
-		if err != nil {
-			log.Printf("Failed to write certificate")
-			w.WriteHeader(http.StatusInternalServerError)
-			continue
-		}
-
-		log.Printf("Successfully polled!");
+	if accessToken == "" {
+		log.Printf("Failed to get access token")
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+
+	// Create certificate signing request
+	csr, err := CreateCsr()
+	if err != nil {
+		log.Printf("Failed to create CSR: " + err.Error())
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	// Get CSR endpoint
+	csrEndpoint := os.Getenv("CSR_ENDPOINT")
+	if csrEndpoint == "" {
+		log.Printf("CSR_ENDPOINT not defined")
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	// Send CSR to CSR Endpoint.
+	csrRequest, err := http.Post(csrEndpoint, "application/pkcs10", strings.NewReader(csr))
+	if err != nil {
+		log.Printf("Failed to send Certificate Signing Request: " + err.Error())
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	// Add request headers
+	csrRequest.Header.Add("authorization", "bearer "+accessToken)
+
+	// Read CSR response body
+	defer csrRequest.Body.Close()
+	csrResponseBodyString, err := io.ReadAll(csrRequest.Body)
+	if err != nil {
+		log.Printf("Failed to read CSR response: " + err.Error())
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	// Get filename of contract certificate file
+	certificateFile := os.Getenv("OUTPUT_FILE")
+	if certificateFile == "" {
+		log.Printf("OUTPUT_FILE not defined")
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	// Respond with success
+	w.WriteHeader(http.StatusOK)
+
+	// Write contract certificate to file
+	err = WriteCertificate(csrResponseBodyString, certificateFile)
+	if err != nil {
+		log.Printf("Failed to write certificate")
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	log.Printf("Successfully polled!");
+	return
 	
 	log.Printf("Polled!");
 }
@@ -546,6 +557,12 @@ func CreateCsr() (string, error) {
 	if cmd == nil {
 		return "", errors.New("failed to execute CSR")
 	}
+
+	out, err := cmd.Output()
+	if err != nil {
+		return "", err
+	}
+	log.Printf("CSR Output: ", string(out))
 
 	// Read CSR file
 	data, err := os.ReadFile("./output/request.csr")
