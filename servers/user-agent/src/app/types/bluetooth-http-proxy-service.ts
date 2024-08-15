@@ -70,15 +70,16 @@ export class BluetoothHttpProxyService {
     for (let i = 0; i < value.byteLength; i++) {
       bytes.push(value.getUint8(i));
     }
+    console.log('received status data', bytes);
 
     // Notify about changed status code.
-    this.statusChanged.emit(bytes);
+    this.statusChanged.emit(bytes[0]);
   }
 
   /**
    * Notifies about changed status.
    */
-  private statusChanged = new EventEmitter<number[]>();
+  private statusChanged = new EventEmitter<number>();
 
   /**
    * Connects to the HTTP GATT Proxy.
@@ -98,7 +99,7 @@ export class BluetoothHttpProxyService {
     await new Promise<void>((resolve, _) => {
       setTimeout(() => {
         resolve();
-      }, 5000);
+      }, 100);
     });
 
     // Start listening to status notifications.
@@ -160,6 +161,9 @@ export class BluetoothHttpProxyService {
     const methodCode = this.getMethodCode(url.protocol as 'http:' | 'https:', 'GET');
 
     const httpUrl = url.toString().replace('http:', '');
+    // Works:
+    // const httpHeaders = '12345678901234567890123456789012345678901234567890123456789012345678901234567890';
+    // const httpHeaders = '12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890';
     const httpHeaders = `host: ${EMSP_BACKEND_DOMAIN}`;//\n${headers.replaceAll('\r\n', '|').replaceAll('\n', '|')}`;//\ncontent-length: ${286}`;
     console.log('Sending GET request...');
   
@@ -192,16 +196,22 @@ export class BluetoothHttpProxyService {
     // Send URL and Body.
     console.log('Sending URL ...', httpUrl);
     await this.uriCharacteristic?.writeValue(this.encoder.encode(httpUrl));
-    await new Promise<void>((resolve) => setInterval(() => resolve(), 1000));
+    // await new Promise<void>((resolve) => setTimeout(() => resolve(), 100));
     console.log('Sending Headers ...', httpHeaders);
     await this.headerCharacteristic?.writeValue(this.encoder.encode(httpHeaders));
-    await new Promise<void>((resolve) => setInterval(() => resolve(), 1000));
+    // await new Promise<void>((resolve) => setTimeout(() => resolve(), 100));
     console.log('Sending Body ...', body);
     await this.bodyCharacteristic?.writeValue(this.encoder.encode(body));
 
     // Write Method Code.
     console.log('Sending POST method code ...', methodCode);
-    await this.controlPointCharacteristic?.writeValue(new Uint8Array([methodCode]));
+    try {
+      await this.controlPointCharacteristic?.writeValue(new Uint8Array([methodCode]));
+    } catch (error) {
+      if (this.controlPointCharacteristic?.service.device.gatt?.connected !== true) {
+        throw error;
+      }
+    }
   }
 
   /**
@@ -232,7 +242,7 @@ export class BluetoothHttpProxyService {
    * @returns Raw HTTP response.
    */
   public async get(url: URL): Promise<HttpRawResponse> {
-    const statusCode = await new Promise<number[]>(async (resolve, reject) => {
+    const statusCode = await new Promise<number>(async (resolve, reject) => {
       try {
         console.log('Receiving status code...');
         firstValueFrom(this.statusChanged).then((statusCode) => {
@@ -257,7 +267,7 @@ export class BluetoothHttpProxyService {
 
     // Return result.
     return {
-      statusCode: statusCode[0],
+      statusCode: statusCode,
       header: responseHeader,
       body: responseBody
     };
@@ -271,7 +281,7 @@ export class BluetoothHttpProxyService {
    * @returns Raw HTTP response.
    */
   public async post(url: URL, body: string, headers: {[key: string]: string}): Promise<HttpRawResponse> {
-    const statusCode = await new Promise<number[]>(async (resolve, reject) => {
+    const statusCode = await new Promise<number>(async (resolve, reject) => {
       try {
         console.log('Receiving status code...');
         firstValueFrom(this.statusChanged).then((statusCode) => {
@@ -296,7 +306,7 @@ export class BluetoothHttpProxyService {
 
     // Return result.
     return {
-      statusCode: statusCode[0],
+      statusCode: statusCode,
       header: responseHeader,
       body: responseBody
     };

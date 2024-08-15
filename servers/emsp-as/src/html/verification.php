@@ -12,19 +12,26 @@
     exit;
   }
 
+  if (isset($_GET['user_code']) === false) {
+    http_response_code(400);
+    echo 'User Code (user_code parameter) is missing!';
+    exit;
+  }
+
   // Load configuration.
-  require('../../config.php');
+  require('../config.php');
 
   // Get device veriifcation request.
-  $deviceVerificationRequest = curl_init($AUTHLETE_CONFIG['DEVICE_AUTHORIZATION_ENDPOINT']);
+  $deviceVerificationRequest = curl_init($AUTHLETE_CONFIG['DEVICE_VERIFICATION_ENDPOINT']);
+  curl_setopt($deviceVerificationRequest, CURLOPT_RETURNTRANSFER, true);
+  curl_setopt($deviceVerificationRequest, CURLOPT_POST, true);
+  curl_setopt($deviceVerificationRequest, CURLOPT_HTTPHEADER, [
+    'Content-Type: application/json',
+    'Authorization: Basic ' . base64_encode($AUTHLETE_CONFIG['API_KEY'] . ':' . $AUTHLETE_CONFIG['API_SECRET']),
+  ]);
   curl_setopt($deviceVerificationRequest, CURLOPT_POSTFIELDS, json_encode(array(
     'userCode' => $_GET['user_code'],
   )));
-  curl_setopt($deviceVerificationRequest, CURLOPT_HTTPHEADER, array(
-    'Content-Type: application/json',
-    'Authorization: Basic ' . base64_encode($AUTHLETE_CONFIG['API_KEY'] . ':' . $AUTHLETE_CONFIG['API_SECRET']),
-  ));
-  curl_setopt($deviceVerificationRequest, CURLOPT_RETURNTRANSFER, true);
   $response = json_decode(curl_exec($deviceVerificationRequest));
 
   // Check for success.
@@ -51,7 +58,7 @@
 <?php foreach ($scopes as &$scope) : ?>
         <input id="scope_<?php echo $scope->name; ?>" type="checkbox" name="scopes" required value="<?php echo $scope->name; ?>">
         <label for="scope_<?php echo $scope->name; ?>">
-          <?php echo $scope->description; ?>
+          <?php echo $scope->description; ?>(<?php echo $scope->name; ?>)
         </label>
         <br>
 <?php endforeach; ?>

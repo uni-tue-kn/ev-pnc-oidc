@@ -118,11 +118,7 @@ export class ConnectComponent implements OnInit {
       // Update connected value.
       this.connectEvFormGroup.controls.connected.setValue(true);
 
-      await new Promise<void>((resolve, _) => {
-        setTimeout(() => {
-          resolve();
-        }, 2000);
-      });
+      await new Promise<void>((resolve, _) => setTimeout(() => resolve(), 100));
 
       console.log('Updating eMSPs...');
       // Request available eMSPs from EV.
@@ -304,6 +300,8 @@ export class ConnectComponent implements OnInit {
         contractProvisioningResponse.verification_uri,
         contractProvisioningResponse.user_code,
       );
+
+      await this.connectedEv.sendConfirmationRequest();
     } catch (e) {
       // Log error.
       console.error('Failed to obtain authorization from eMSP!', e);

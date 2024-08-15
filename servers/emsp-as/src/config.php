@@ -11,8 +11,8 @@
     'AUTHORIZATION_ISSUE_ENDPOINT' => $authleteBase . '/auth/authorization/issue',
     'TOKEN_ENDPOINT' => $authleteBase . '/auth/token',
     'JWKS_ENDPOINT' => $authleteBase . '/service/jwks/get',
-    'DEVICE_AUTHORIZATION_ENDPOINT' => $authleteBase . '/api/device/authorization',
-    'DEVICE_VERIFICATION_ENDPOINT' => $authleteBase . '/api/device/verification',
-    'DEVICE_COMPLETION_ENDPOINT' => $authleteBase . '/api/device/complete',
+    'DEVICE_AUTHORIZATION_ENDPOINT' => $authleteBase . '/device/authorization',
+    'DEVICE_VERIFICATION_ENDPOINT' => $authleteBase . '/device/verification',
+    'DEVICE_COMPLETION_ENDPOINT' => $authleteBase . '/device/complete',
   );
 ?>

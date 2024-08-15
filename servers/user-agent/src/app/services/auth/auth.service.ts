@@ -35,73 +35,6 @@ export class AuthService {
     return await firstValueFrom(this.http.get<DiscoveryDocument>(discoveryUrl));
   }
 
-  // /**
-  //  * Performs a Pushed Authorization Request (PAR) and resolves with the obtained authorization code.
-  //  * @param authorizationEndpoint Pushed Authorization Request (PAR) endpoint.
-  //  * @param state Authorization Request state id.
-  //  * @param requestUri Request URI.
-  //  * @param clientId Client ID.
-  //  * @param timeout Authorization timeout.
-  //  * @returns Authorization Code.
-  //  */
-  // public async authorize(authorizationEndpoint: string, state: string, requestUri: string, clientId: string, timeout: number = 600000): Promise<string> {
-  //   // Build authorization URL.
-  //   const authorizationUrl = new URL(authorizationEndpoint);
-  //   authorizationUrl.searchParams.append('client_id', clientId);
-  //   authorizationUrl.searchParams.append('request_uri', requestUri);
-
-  //   // Generate the key of the local storage variable where the OauthCallbackComponent will write the 
-  //   const stateKey = OAUTH_AUTH_CODE_KEY_PREFIX + state;
-  //   // Ensure that the state is not yet in use.
-  //   if (localStorage.getItem(stateKey) !== null) {
-  //     throw new Error('State is already in use!');
-  //   }
-  //   // Write an empty string to the local storage to reserve the state.
-  //   localStorage.setItem(stateKey, '');
-
-  //   try {
-  //     // Open authorization URL in new tab and focus this tab.
-  //     window.open(authorizationUrl, '_blank')?.focus();
-
-  //     // Await authorization code from new tab returned via local storage.
-  //     return await new Promise<string>((resolve, reject) => {
-  //       const onStorage = (ev: StorageEvent) => {
-  //         // Ensure that event was raised by local storage.
-  //         if (ev.storageArea !== window.localStorage) return;
-  //         // Ensure that event was raised by state key.
-  //         if (ev.key !== stateKey) return;
-  //         // Ensure that new value is a valid authorization code.
-  //         if (!ev.newValue) return;
-
-  //         // Stop listening to storage storage events and stop timeout.
-  //         window.removeEventListener('storage', onStorage);
-  //         window.clearTimeout(timeoutId);
-
-  //         // Resolve with authorization code.
-  //         resolve(ev.newValue);
-  //       };
-  //       // Start listening to storage events.
-  //       window.addEventListener('storage', onStorage);
-
-  //       // Start a timeout.
-  //       const timeoutId = window.setTimeout(() => {
-  //         // Stop listening to storage events and clear the timeout.
-  //         window.removeEventListener('storage', onStorage);
-  //         window.clearTimeout(timeoutId);
-
-  //         // Throw an error.
-  //         reject(new Error('Auth Flow timed out!'));
-  //       }, timeout);
-  //     });
-  //   } catch (e) {
-  //     // Rethrow the error.
-  //     throw e;
-  //   } finally {
-  //     // Remove the authorization code from local storage.
-  //     localStorage.removeItem(stateKey);
-  //   }
-  // }
-
   /**
    * Performs a device authorization request.
    * @param verificationUri Verification URI.
@@ -115,33 +48,4 @@ export class AuthService {
     // Open authorization URL in new tab and focus this tab.
     window.open(verificationUrl, '_blank')?.focus();
   }
-
-  // /**
-  //  * Handles URL query parameters of Pushed Authorization Request (PAR) response.
-  //  */
-  // public async handleParResponse(): Promise<void> {
-  //   // Get HTTP Query parameters.
-  //   const parameters = await firstValueFrom(this.activatedRoute.queryParams);
-
-  //   // Get the state parameter.
-  //   const stateId = parameters['state'];
-
-  //   // Generate the ID of the authorization code key in the local storage.
-  //   const stateKey = OAUTH_AUTH_CODE_KEY_PREFIX + stateId;
-  //   // Get the stored value for the state.
-  //   const stateValue = window.localStorage.getItem(stateKey);
-
-  //   // Verify that the state is active.
-  //   if (stateValue === null) return;
-  //   // Verify that the state is not yet used.
-  //   if (stateValue !== '') return;
-
-  //   // Get the authorization code parameter.
-  //   const authCode = parameters['code'];
-  //   // Verify that an authorization code was received.
-  //   if (!authCode) return;
-
-  //   // Write the state value into the local storage.
-  //   window.localStorage.setItem(stateKey, authCode);
-  // }
 }

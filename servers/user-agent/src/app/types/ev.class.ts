@@ -67,9 +67,9 @@ export class Ev {
    * @param body POST Body.
    * @returns Parsed response.
    */
-  private async post<R>(url: URL, body: object): Promise<HttpResponse<R>> {
+  private async post<R>(url: URL, body?: object): Promise<HttpResponse<R>> {
     // Parse HTTP request body.
-    const bodyString = JSON.stringify(body);
+    const bodyString = !body ? '' : JSON.stringify(body);
 
     // Send HTTP POST request and await response.
     const response = await this.httpProxy.post(url, bodyString, {'Content-Type': 'application/json'});
@@ -116,7 +116,7 @@ export class Ev {
         cpr,
       );
 
-      if (response.status !== 201) {
+      if (response.status !== 200) {
         throw 'Invalid server response "' + response.status + '"';
       }
 
@@ -132,16 +132,10 @@ export class Ev {
 
   /**
    * Sends the Authorization Code to the EV and awaits end of authorization process.
-   * @param authorizationCode Authorization Code obtained from Authorization Server.
-   * @param state State parameter.
    */
-  async sendConfirmationRequest(authorizationCode: string, state: string): Promise<void> {
+  async sendConfirmationRequest(): Promise<void> {
     try {
-      const response = await this.post(
-        CONFIRMATION_URL, {
-        auth_code: authorizationCode,
-        state: state,
-      });
+      const response = await this.post(CONFIRMATION_URL);
       if (response.status !== 200) {
         throw 'Failed!';
       }
