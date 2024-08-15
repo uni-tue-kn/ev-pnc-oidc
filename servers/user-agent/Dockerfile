@@ -26,7 +26,7 @@ RUN npm run build
 
 
 # Create a runtime container
-FROM nginx:1.24-alpine AS runtime
+FROM nginx:1.27-alpine AS runtime
 
 # Update packages
 RUN apk update && apk upgrade

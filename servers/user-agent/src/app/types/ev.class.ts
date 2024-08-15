@@ -10,22 +10,22 @@ import { IEvAuthorizationDetail } from './ev-authorization-detail.interface';
 /**
  * The EMSP Backend Domain.
  */
-const EMSP_BACKEND_DOMAIN='ev.localhost';
+export const EMSP_BACKEND_DOMAIN='ev.localhost';
 
 /**
  * URL used to request available eMSPs.
  */
-const EMSP_URL = new URL(`http://${EMSP_BACKEND_DOMAIN}/emsps`);
+const EMSP_URL = new URL(`http://127.0.0.1/emsps`);
 
 /**
  * URL used to initialize a Pushed Authorization Request.
  */
-const AUTHORIZATION_INITIALIZATION_URL = new URL(`http://${EMSP_BACKEND_DOMAIN}/cpr`);
+const AUTHORIZATION_INITIALIZATION_URL = new URL(`http://127.0.0.1/cpr`);
 
 /**
  * URL used to finish authorization.
  */
-const CONFIRMATION_URL = new URL(`http://${EMSP_BACKEND_DOMAIN}/confirm`);
+const CONFIRMATION_URL = new URL(`http://127.0.0.1/confirm`);
 
 export class Ev {
 
@@ -72,7 +72,8 @@ export class Ev {
     const bodyString = JSON.stringify(body);
 
     // Send HTTP POST request and await response.
-    const response = await this.httpProxy.post(url, bodyString);
+    const response = await this.httpProxy.post(url, bodyString, {'Content-Type': 'application/json'});
+    console.log('Received response', response);
 
     // Parse HTTP response.
     return new HttpResponse<R>({
@@ -107,7 +108,6 @@ export class Ev {
     try {
       const cpr: ContractProvisioningRequest = {
         emsp_id: emsp.id,
-        redirect_uri: `${window.location.origin}/${OAUTH_REDIRECT_URI_PATH}`,
         authorization_detail: detail,
       };
       // Send POST request.
@@ -117,7 +117,7 @@ export class Ev {
       );
 
       if (response.status !== 201) {
-        throw 'Failed';
+        throw 'Invalid server response "' + response.status + '"';
       }
 
       // Get body and verify its existence.
@@ -126,7 +126,7 @@ export class Ev {
 
       return body;
     } catch (e) {
-      throw new Error('Contract Provisioning Request failed');
+      throw new Error('Contract provisioning request failed: ' + e);
     }
   }
 
@@ -155,6 +155,6 @@ export class Ev {
    */
   async disconnect(): Promise<void> {
     await this.httpProxy.disconnect();
-    await this.httpProxy.service.device.forget();
+    this.httpProxy.service.device.gatt?.disconnect();
   }
 }

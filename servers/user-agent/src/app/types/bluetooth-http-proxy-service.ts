@@ -1,11 +1,53 @@
 import { EventEmitter } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 
-import { BODY_CHARACTERISTIC_UUID, CONTROL_POINT_CHARACTERISTIC_UUID, HEADER_CHARACTERISTIC_UUID, HTTP_STATUS_CHARACTERISTIC_UUID, URI_CHARACTERISTIC_UUID } from './http-gatt-uuids';
+import { EMSP_BACKEND_DOMAIN } from './ev.class';
+import {
+  BODY_CHARACTERISTIC_UUID,
+  CONTROL_POINT_CHARACTERISTIC_UUID,
+  HEADER_CHARACTERISTIC_UUID,
+  HTTP_STATUS_CHARACTERISTIC_UUID,
+  URI_CHARACTERISTIC_UUID
+} from './http-gatt-uuids';
 import { HttpMethods } from './http-methods.type';
 import { HttpRawResponse } from './http-raw-response.interface';
 
 export class BluetoothHttpProxyService {
+  
+  /**
+   * Text Encoder.
+   */
+  private readonly encoder = new TextEncoder();
+  
+  /**
+   * Text Decoder.
+   */
+  private readonly decoder = new TextDecoder();
+  
+  /**
+   * BLE GATT Characteristic for HTTP Body.
+   */
+  private bodyCharacteristic?: BluetoothRemoteGATTCharacteristic;
+  
+  /**
+   * BLE GATT Characteristic for HTTP Control Point.
+   */
+  private controlPointCharacteristic?: BluetoothRemoteGATTCharacteristic;
+  
+  /**
+   * BLE GATT Characteristic for HTTP Headers.
+   */
+  private headerCharacteristic?: BluetoothRemoteGATTCharacteristic;
+  
+  /**
+   * BLE GATT Characteristic for HTTP Status Codes.
+   */
+  private statusCharacteristic?: BluetoothRemoteGATTCharacteristic;
+  
+  /**
+   * BLE GATT Characteristic for HTTP URLs.
+   */
+  private uriCharacteristic?: BluetoothRemoteGATTCharacteristic;
 
   /**
    * Constructs a new BLE HTTP Proxy Service instance.
@@ -16,77 +58,58 @@ export class BluetoothHttpProxyService {
   ) { }
 
   /**
-   * Text Encoder.
-   */
-  private readonly encoder = new TextEncoder();
-  /**
-   * Text Decoder.
-   */
-  private readonly decoder = new TextDecoder();
-
-  /**
-   * BLE GATT Characteristic for HTTP Body.
-   */
-  private bodyCharacteristic?: BluetoothRemoteGATTCharacteristic;
-  /**
-   * BLE GATT Characteristic for HTTP Control Point.
-   */
-  private controlPointCharacteristic?: BluetoothRemoteGATTCharacteristic;
-  /**
-   * BLE GATT Characteristic for HTTP Headers.
-   */
-  private headerCharacteristic?: BluetoothRemoteGATTCharacteristic;
-  /**
-   * BLE GATT Characteristic for HTTP Status Codes.
-   */
-  private statusCharacteristic?: BluetoothRemoteGATTCharacteristic;
-  /**
-   * BLE GATT Characteristic for HTTP URLs.
-   */
-  private uriCharacteristic?: BluetoothRemoteGATTCharacteristic;
-
-  /**
    * Handles changed status characteristics by notifying about changed status.
    */
-  private readonly onStatusCharacteristicChanged = async () => {
-    // Read new status code.
-    const data = await this.statusCharacteristic?.readValue();
-    // Parse status code.
-    const statusCode = data?.getUint16(0);
+  private readonly onStatusCharacteristicChanged = async (ev: Event) => {
+    // Ensure that received event contains expected value.
+    const value = ((ev.target) as BluetoothRemoteGATTCharacteristic | null)?.value;
+    if (!value) return;
+
+    // Parse received status code.
+    const bytes = [];
+    for (let i = 0; i < value.byteLength; i++) {
+      bytes.push(value.getUint8(i));
+    }
+
     // Notify about changed status code.
-    this.statusChanged.emit(statusCode);
+    this.statusChanged.emit(bytes);
   }
 
   /**
    * Notifies about changed status.
    */
-  private statusChanged = new EventEmitter<number>();
+  private statusChanged = new EventEmitter<number[]>();
 
   /**
    * Connects to the HTTP GATT Proxy.
    */
   public async connect(): Promise<void> {
     // Get all relevant GATT characteristics.
-    [
-      this.uriCharacteristic,
-      this.statusCharacteristic,
-      this.controlPointCharacteristic,
-      this.bodyCharacteristic,
-      this.headerCharacteristic,
-    ] = await Promise.all([
-      this.service.getCharacteristic(URI_CHARACTERISTIC_UUID),
-      this.service.getCharacteristic(HTTP_STATUS_CHARACTERISTIC_UUID),
-      this.service.getCharacteristic(CONTROL_POINT_CHARACTERISTIC_UUID),
-      this.service.getCharacteristic(BODY_CHARACTERISTIC_UUID),
-      this.service.getCharacteristic(HEADER_CHARACTERISTIC_UUID),
-    ]);
+    console.log('Connecting Characteristics ...');
+    this.uriCharacteristic = await this.service.getCharacteristic(URI_CHARACTERISTIC_UUID);
+    this.controlPointCharacteristic = await this.service.getCharacteristic(CONTROL_POINT_CHARACTERISTIC_UUID);
+    this.bodyCharacteristic = await this.service.getCharacteristic(BODY_CHARACTERISTIC_UUID);
+    this.headerCharacteristic = await this.service.getCharacteristic(HEADER_CHARACTERISTIC_UUID);
+    const statusCharacteristic = await this.service.getCharacteristic(HTTP_STATUS_CHARACTERISTIC_UUID);
+
+    console.log('Characteristics connected!');
+
+    // Wait 5 seconds before continuing...
+    await new Promise<void>((resolve, _) => {
+      setTimeout(() => {
+        resolve();
+      }, 5000);
+    });
 
     // Start listening to status notifications.
+    console.log('Starting notifications of HTTP Status Characteristics ...');
+    this.statusCharacteristic = await statusCharacteristic.startNotifications();
+    console.log('Start listening to notifications...');
     this.statusCharacteristic.addEventListener(
       'characteristicvaluechanged',
       this.onStatusCharacteristicChanged,
+      true,
     );
-    await this.statusCharacteristic.startNotifications();
   }
 
   /**
@@ -107,9 +130,9 @@ export class BluetoothHttpProxyService {
    * @param method HTTP Method.
    * @returns Method Number.
    */
-  private getMethodCode(protocol: 'http' | 'https', method: HttpMethods): number {
+  private getMethodCode(protocol: 'http:' | 'https:', method: HttpMethods): number {
     switch (protocol) {
-      case 'http':
+      case 'http:':
         switch (method) {
           case 'GET': return 0x01;
           case 'HEAD': return 0x02;
@@ -117,7 +140,7 @@ export class BluetoothHttpProxyService {
           case 'PUT': return 0x04;
           case 'DELETE': return 0x05;
         }
-      case 'https':
+      case 'https:':
         switch (method) {
           case 'GET': return 0x06;
           case 'HEAD': return 0x07;
@@ -132,12 +155,21 @@ export class BluetoothHttpProxyService {
    * Sends an HTTP GET request to the BLE HTTP Proxy.
    * @param url URL.
    */
-  private async sendGet(url: URL): Promise<void> {
+  private async sendGet(url: URL, headers: string): Promise<void> {
     // Compute the method code.
-    const methodCode = this.getMethodCode(url.protocol as 'http' | 'https', 'POST');
+    const methodCode = this.getMethodCode(url.protocol as 'http:' | 'https:', 'GET');
 
+    const httpUrl = url.toString().replace('http:', '');
+    const httpHeaders = `host: ${EMSP_BACKEND_DOMAIN}`;//\n${headers.replaceAll('\r\n', '|').replaceAll('\n', '|')}`;//\ncontent-length: ${286}`;
+    console.log('Sending GET request...');
+  
     // Send URL.
-    await this.uriCharacteristic?.writeValue(this.encoder.encode(url.toString()));
+    console.log('Sending URL ...', httpUrl);
+    await this.uriCharacteristic?.writeValue(this.encoder.encode(httpUrl));
+    console.log('Sending Headers ...', httpHeaders);
+    await this.headerCharacteristic?.writeValue(this.encoder.encode(httpHeaders));
+    console.log('Sending Body ...');
+    await this.bodyCharacteristic?.writeValue(this.encoder.encode(''));
 
     // Write Method Code.
     await this.controlPointCharacteristic?.writeValue(new Uint8Array([methodCode]));
@@ -147,18 +179,28 @@ export class BluetoothHttpProxyService {
    * Sends an HTTP POST request to the BLE HTTP Proxy.
    * @param url URL.
    * @param body HTTP POST Body.
+   * @param headers HTTP Headers.
    */
-  private async sendPost(url: URL, body: string): Promise<void> {
+  private async sendPost(url: URL, body: string, headers: string): Promise<void> {
     // Compute the method code.
-    const methodCode = this.getMethodCode(url.protocol as 'http' | 'https', 'POST');
+    const methodCode = this.getMethodCode(url.protocol as 'http:' | 'https:', 'POST');
+
+    const httpUrl = url.toString().replace('http:', '');
+    const httpHeaders = `host: ${EMSP_BACKEND_DOMAIN}|content-length: ${body.length}|${headers.replaceAll('\r\n', '|').replaceAll('\n', '|')}`;
+    console.log('Sending POST request...');
 
     // Send URL and Body.
-    await Promise.all([
-      this.uriCharacteristic?.writeValue(this.encoder.encode(url.toString())),
-      this.bodyCharacteristic?.writeValue(this.encoder.encode(body)),
-    ]);
+    console.log('Sending URL ...', httpUrl);
+    await this.uriCharacteristic?.writeValue(this.encoder.encode(httpUrl));
+    await new Promise<void>((resolve) => setInterval(() => resolve(), 1000));
+    console.log('Sending Headers ...', httpHeaders);
+    await this.headerCharacteristic?.writeValue(this.encoder.encode(httpHeaders));
+    await new Promise<void>((resolve) => setInterval(() => resolve(), 1000));
+    console.log('Sending Body ...', body);
+    await this.bodyCharacteristic?.writeValue(this.encoder.encode(body));
 
     // Write Method Code.
+    console.log('Sending POST method code ...', methodCode);
     await this.controlPointCharacteristic?.writeValue(new Uint8Array([methodCode]));
   }
 
@@ -190,24 +232,32 @@ export class BluetoothHttpProxyService {
    * @returns Raw HTTP response.
    */
   public async get(url: URL): Promise<HttpRawResponse> {
-    // Send the HTTP GET request.
-    await this.sendGet(url);
+    const statusCode = await new Promise<number[]>(async (resolve, reject) => {
+      try {
+        console.log('Receiving status code...');
+        firstValueFrom(this.statusChanged).then((statusCode) => {
+          console.log('Status code received', statusCode);
+          resolve(statusCode);
+        });
 
-    // Await status code.
-    const statusCode = await firstValueFrom(this.statusChanged);
+        // Send the HTTP GET request.
+        console.log('Sending GET request to', url);
+        await this.sendGet(url, '');
+      } catch (error) {
+        reject(error);
+      }
+    });
 
     // Read header and body.
-    const [
-      responseHeader,
-      responseBody,
-    ] = await Promise.all([
-      this.readHeader(),
-      this.readBody(),
-    ]);
+    console.log('Receiving header and body ...');
+    const responseHeader = await this.readHeader();
+    console.log('Header received', responseHeader);
+    const responseBody = await this.readBody();
+    console.log('Body received', responseBody);
 
     // Return result.
     return {
-      statusCode: statusCode,
+      statusCode: statusCode[0],
       header: responseHeader,
       body: responseBody
     };
@@ -217,27 +267,36 @@ export class BluetoothHttpProxyService {
    * Sends an HTTP POST request to the BLE HTTP Proxy and resolves response.
    * @param url URL.
    * @param body HTTP Body.
+   * @param headers HTTP Headers.
    * @returns Raw HTTP response.
    */
-  public async post(url: URL, body: string): Promise<HttpRawResponse> {
-    // Send the HTTP POST request.
-    await this.sendPost(url, body);
+  public async post(url: URL, body: string, headers: {[key: string]: string}): Promise<HttpRawResponse> {
+    const statusCode = await new Promise<number[]>(async (resolve, reject) => {
+      try {
+        console.log('Receiving status code...');
+        firstValueFrom(this.statusChanged).then((statusCode) => {
+          console.log('Status code received', statusCode);
+          resolve(statusCode);
+        });
 
-    // Await status code.
-    const statusCode = await firstValueFrom(this.statusChanged);
+        // Send the HTTP POST request.
+        console.log('Sending POST request to', url);
+        await this.sendPost(url, body, Object.keys(headers).map((key) => key + ': ' + headers[key]).join('|'));
+      } catch (error) {
+        reject(error);
+      }
+    });
 
     // Read header and body.
-    const [
-      responseHeader,
-      responseBody,
-    ] = await Promise.all([
-      this.readHeader(),
-      this.readBody(),
-    ]);
+    console.log('Receiving header and body ...');
+    const responseHeader = await this.readHeader();
+    console.log('Header received', responseHeader);
+    const responseBody = await this.readBody();
+    console.log('Body received', responseBody);
 
     // Return result.
     return {
-      statusCode: statusCode,
+      statusCode: statusCode[0],
       header: responseHeader,
       body: responseBody
     };

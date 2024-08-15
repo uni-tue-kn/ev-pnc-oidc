@@ -25,9 +25,11 @@ export class EvService {
   async connect(name: string): Promise<Ev> {
     try {
       // Connect to the EV via BLE.
+      console.log('Connecting to Bluetooth device ...');
       const gattServer = await this.bleService.connect(name, [HPS_SERVICE_UUID]);
 
       // Connect to BLE HTTP Proxy Service.
+      console.log('Connecting to HTTP Proxy Service ...')
       const proxyService = await this.bleService.getHttpService(gattServer);
 
       // Return the connected EV instance.

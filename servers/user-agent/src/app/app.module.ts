@@ -19,14 +19,14 @@ import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
 import { ConnectComponent } from './components/connect/connect.component';
 import { HomeComponent } from './components/home/home.component';
-import { OauthCallbackComponent } from './components/oauth-callback/oauth-callback.component';
+// import { OauthCallbackComponent } from './components/oauth-callback/oauth-callback.component';
 
 @NgModule({
   declarations: [
     AppComponent,
     ConnectComponent,
     HomeComponent,
-    OauthCallbackComponent,
+    // OauthCallbackComponent,
   ],
   imports: [
     AppRoutingModule,

@@ -1,6 +1,7 @@
-/.angular/cache
+/.angular
 /.vscode
 /.editorconfig
+/.gitignore
 /node_modules
 /Dockerfile
 /dist

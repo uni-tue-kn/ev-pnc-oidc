@@ -1,7 +1,7 @@
 export interface DiscoveryDocument {
 
   /**
-   * Authorization Endpoint.
+   * Device Authorization Endpoint.
    */
-  authorization_endpoint: string;
+  device_authorization_endpoint: string;
 }

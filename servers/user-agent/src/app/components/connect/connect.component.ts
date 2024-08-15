@@ -110,16 +110,26 @@ export class ConnectComponent implements OnInit {
 
     try {
       // Connect to EV.
+      console.log(`Connecting to ev "${name}"...`);
       const ev = await this.evService.connect(name);
+      console.log('Connected to ev', ev);
       // Mark EV as connected.
       this.connectedEv = ev;
       // Update connected value.
       this.connectEvFormGroup.controls.connected.setValue(true);
 
+      await new Promise<void>((resolve, _) => {
+        setTimeout(() => {
+          resolve();
+        }, 2000);
+      });
+
+      console.log('Updating eMSPs...');
       // Request available eMSPs from EV.
       await this.emspService.updateEmsps(ev);
       // List available eMSPs.
       this.availableEmsps = [...this.emspService.getEmsps()];
+      console.log('Available eMSPs found', this.availableEmsps);
     } catch (e) {
       // Log error.
       console.error('Failed to connect to EV!', e);
@@ -289,30 +299,11 @@ export class ConnectComponent implements OnInit {
       );
       this.waitForContractProvisioningResponse = false;
 
-      // Send Authorization Request.
-      this.waitForUserAuthorization = true;
-      // Get Authorization Endpoint
-      const discoveryDocument = await this.authService.getDiscoveryDocument(this.selectedEmsp.base_url);
-      const authorizationEndpoint = discoveryDocument.authorization_endpoint;
-      if (!authorizationEndpoint) {
-        throw new Error('Authorization Endpoint is not provided!');
-      }
       // Redirect user to Authorization Endpoint in a new tab and wait for authorization.
-      const authorizationCode = await this.authService.authorize(
-        authorizationEndpoint,
-        contractProvisioningResponse.state,
-        contractProvisioningResponse.request_uri,
-        contractProvisioningResponse.client_id,
+      await this.authService.authorizeDevice(
+        contractProvisioningResponse.verification_uri,
+        contractProvisioningResponse.user_code,
       );
-      this.waitForUserAuthorization = false;
-
-      // Forward authorization code to EV and await success message.
-      this.waitForEvAuthorizationResponse = true;
-      await this.connectedEv.sendConfirmationRequest(
-        authorizationCode,
-        contractProvisioningResponse.state,
-      );
-      this.waitForEvAuthorizationResponse = false;
     } catch (e) {
       // Log error.
       console.error('Failed to obtain authorization from eMSP!', e);

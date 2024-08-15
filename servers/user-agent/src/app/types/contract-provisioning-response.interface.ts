@@ -1,17 +1,12 @@
 export interface ContractProvisioningResponse {
 
   /**
-   * The URI of the Pushed Authorization Request.
+   * The user code.
    */
-  request_uri: string;
+  user_code: string;
 
   /**
-   * The Client ID to use for the authorization request.
+   * The verification URI at the Authorization Server.
    */
-  client_id: string;
-
-  /**
-   * The EV state.
-   */
-  state: string;
+  verification_uri: string;
 }
