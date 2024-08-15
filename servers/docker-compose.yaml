@@ -1,7 +1,7 @@
 services:
-  # Reverse Proxy as HTTP/HTTPS Ingress
+  # Reverse Proxy as HTTP/HTTPS Ingress:
   proxy:
-    image: traefik:2.11
+    image: traefik:3.1
     restart: unless-stopped
     networks:
       - proxy
@@ -12,56 +12,73 @@ services:
       # Access credentials for DNS Challenge with INWX
       INWX_USERNAME_FILE: /run/secrets/inwx_username
       INWX_PASSWORD_FILE: /run/secrets/inwx_password
-      INWX_SHARED_SECRET_FILE: /run/secrets/inwx_secret
+      INWX_SHARED_SECRET_FILE: /run/secrets/inwx_totpcode
     command:
-      # Enable access log
+      # Enable access log:
       - --accesslog=true
-      # Configure HTTP and HTTPS entrypoints
+      # Set clobal configuration:
+      - --global.checknewversion=false
+      - --global.sendanonymoususage=false
+      # Configure HTTP entrypoint:
+      - --entrypoints.web=true
       - --entrypoints.web.address=:80/tcp
+      - --entrypoints.web.http=true
+      - --entrypoints.web.http.tls=false
+      # Configure HTTPS entrypoint:
+      - --entrypoints.websecure=true
       - --entrypoints.websecure.address=:443/tcp
+      - --entrypoints.websecure.http=true
       - --entrypoints.websecure.http.tls=true
-      # Configure Let's Encrypt with DNS challenge
       - --entrypoints.websecure.http.tls.certresolver=letsencrypt
+      # Configure Let's Encrypt with DNS challenge:
       - --certificatesresolvers.letsencrypt.acme.email=${LETS_ENCRYPT_EMAIL}
       - --certificatesresolvers.letsencrypt.acme.storage=/etc/traefik/acme/acme.json
       - --certificatesresolvers.letsencrypt.acme.dnschallenge.provider=inwx
       - --certificatesresolvers.letsencrypt.acme.dnschallenge.resolvers=1.1.1.1:53,8.8.8.8:53
-      # Enable Docker provider
+      # Enable Docker provider:
       - --providers.docker=true
       - --providers.docker.endpoint=unix:///var/run/docker.sock
       - --providers.docker.exposedbydefault=false
       - --providers.docker.network=proxy
-      # Enable JWT Plugin
+      - --providers.docker.watch=true
+      # Enable JWT middleware plugin:
       - --experimental.plugins.jwt.modulename=github.com/Brainnwave/jwt-middleware
-      - --experimental.plugins.jwt.version=v1.1.8
+      - --experimental.plugins.jwt.version=v1.2.1
     secrets:
-      # Access credentials for DNS Challenge with INWX
+      # Access credentials for DNS Challenge with INWX:
       - inwx_username
       - inwx_password
-      - inwx_secret
+      - inwx_totpcode
     volumes:
-      # Mount Docker Socket to use it as provider
+      # Mount Docker socket to use it as provider:
       - /var/run/docker.sock:/var/run/docker.sock:ro
-      # Mount certificates for persistency
+      # Mount certificates for persistency:
       - .secrets/acme:/etc/traefik/acme:rw
   
-  # eMSP Authorization Server
-  as-http:
-    image: nginx:1.24-alpine
+  # eMSP Authorization Server:
+  as:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
     depends_on:
       - proxy
       - as-php
     networks:
       - proxy
     labels:
+      # Enable reverse proxying on HTTP and HTTPS:
       - traefik.enable=true
       - traefik.http.routers.emsp-as.entrypoints=web,websecure
       - traefik.http.routers.emsp-as.rule=Host(`${AUTHORIZATION_SERVER_DOMAIN}`)
+      - traefik.http.routers.emsp-as.service=emsp-as
+      - traefik.http.services.emsp-as.loadbalancer.server.port=80
     volumes:
+      # Web files:
       - ./emsp-as/src:/var/www:ro
+      # Nginx configuration:
       - ./emsp-as/nginx.conf:/etc/nginx/conf.d/default.conf:ro
   as-php:
     image: php:8.3-fpm-alpine
+    restart: unless-stopped
     networks:
       - proxy
     environment:
@@ -71,6 +88,7 @@ services:
       CLIENT_ID: ${AUTHLETE_CLIENT_ID}
       CLIENT_SECRET: ${AUTHLETE_CLIENT_SECRET}
     volumes:
+      # Web files:
       - ./emsp-as/src:/var/www:ro
 
   # eMSP Backend to request X.509 certificates
@@ -81,35 +99,38 @@ services:
     restart: unless-stopped
     depends_on:
       - proxy
-      - as-http
     networks:
       - proxy
     environment:
-      # Configuration
-      TRUSTED_ISSUER: https://${AUTHORIZATION_SERVER_DOMAIN}
-      TRUSTED_AUDIENCE: ${TRUSTED_AUDIENCE}
-      JWKS_URI: http://as-http:8080/api/jwks
-      REQUIRED_SCOPES: csr
+      # Configuration:
+      PORT: 8080
       CSR_DIR: /app/csr
       CRT_DIR: /app/crt
-      SIGNING_CMD: ./scripts/sign-cert.sh
+      SIGNING_CMD: /app/scripts/sign-cert.sh
       SIGNING_ARGS: "$${CSR_FILE} $${CRT_FILE}"
     labels:
+      # Reverse proxy on HTTP and HTTPS:
       - traefik.enable=true
       - traefik.http.routers.emsp-backend.entrypoints=web,websecure
       - traefik.http.routers.emsp-backend.rule=Host(`${EMSP_BACKEND_DOMAIN}`)
+      - traefik.http.routers.emsp-backend.service=emsp-backend
+      - traefik.http.services.emsp-backend.loadbalancer.server.port=8080
       # JWT Bearer Authorization:
       - traefik.http.routers.emsp-backend.middlewares=emsp-backend@docker
       - traefik.http.middlewares.emsp-backend.plugin.jwt.issuers=https://${AUTHORIZATION_SERVER_DOMAIN}
+      - traefik.http.middlewares.emsp-backend.plugin.jwt.require.aud=${TRUSTED_AUDIENCE}
       - traefik.http.middlewares.emsp-backend.plugin.jwt.require.client_id=${AUTHLETE_CLIENT_ID}
       - traefik.http.middlewares.emsp-backend.plugin.jwt.require.iss=https://${AUTHORIZATION_SERVER_DOMAIN}
       - traefik.http.middlewares.emsp-backend.plugin.jwt.require.scope=ccsr
     volumes:
+      # Location of root CA config files:
       - .secrets/ca:/app/ca:rw
+      # Location of received certificate signing request files:
       - .secrets/csr:/app/csr:rw
+      # Location of issued contract certificate files:
       - .secrets/crt:/app/crt:rw
 
-  # User Agent for Certificate Provisioning
+  # User Agent for certificate provisioning
   user-agent:
     build:
       context: ./user-agent
@@ -130,8 +151,8 @@ secrets:
     file: .secrets/inwx_username.txt
   inwx_password:
     file: .secrets/inwx_password.txt
-  inwx_secret:
-    file: .secrets/inwx_secret.txt
+  inwx_totpcode:
+    file: .secrets/inwx_totpcode.txt
 
 networks:
   # Network between Reverse Proxy and services
