@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"net/http"
+	"os"
 
 	emsp_backend "emsp_backend/go"
 )
@@ -16,6 +17,13 @@ func main() {
 		log.Fatalf("Loading failed: " + err.Error())
 		return
 	}
+
+	emsp_backend.LogWriter, err = os.OpenFile("/logs/log.csv", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0666)
+	if err != nil {
+		log.Printf("Failed to create log file writer")
+		return
+	}
+	defer emsp_backend.LogWriter.Close()
 
 	// Initialize Router
 	router := emsp_backend.NewRouter()

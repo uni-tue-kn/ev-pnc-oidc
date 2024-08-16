@@ -2,6 +2,7 @@ package emsp_backend
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -9,11 +10,15 @@ import (
 	"os/exec"
 	"path"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 )
 
+var LogWriter *os.File = nil
+
 func DownloadCsr(r *http.Request) (string, error) {
+	measureStart := time.Now()
 	// Create CSR Directory if not exists
 	_, err := os.Stat(Configuration.CsrDirectory)
 	if os.IsNotExist(err) {
@@ -43,10 +48,21 @@ func DownloadCsr(r *http.Request) (string, error) {
 		return "", errors.Join(errors.New("Failed to download CSR to '"+csrFilePath+"'"), err)
 	}
 
+	measureEnd := time.Now()
+	measureDuration := time.Since(measureStart)
+	if LogWriter != nil {
+		_, err := LogWriter.WriteString("download_csr," + fmt.Sprint(measureStart.UnixNano()) + "," + fmt.Sprint(measureEnd.UnixNano()) + "," + fmt.Sprint(measureDuration.Nanoseconds()) + "\r\n")
+		if err != nil {
+			log.Printf("Writing measurement failed: " + err.Error())
+		}
+	}
+
 	return csrId, nil
 }
 
 func SignCsr(csrPath string, crtPath string) error {
+	measureStart := time.Now()
+
 	// Prepare signing command
 	var signingArgs []string
 	for i := 0; i < len(Configuration.SigningArgs); i++ {
@@ -63,10 +79,21 @@ func SignCsr(csrPath string, crtPath string) error {
 		return errors.Join(errors.New("Failed to sign CSR"), err)
 	}
 
+	measureEnd := time.Now()
+	measureDuration := time.Since(measureStart)
+	if LogWriter != nil {
+		_, err := LogWriter.WriteString("sign_csr," + fmt.Sprint(measureStart.UnixNano()) + "," + fmt.Sprint(measureEnd.UnixNano()) + "," + fmt.Sprint(measureDuration.Nanoseconds()) + "\r\n")
+		if err != nil {
+			log.Printf("Writing measurement failed: " + err.Error())
+		}
+	}
+
 	return nil
 }
 
 func SendCrt(crtPath string, w *http.ResponseWriter) error {
+	measureStart := time.Now()
+
 	crtFile, err := os.Open(crtPath)
 	if err != nil {
 		return errors.Join(errors.New("Failed to open CRT File"), err)
@@ -78,10 +105,21 @@ func SendCrt(crtPath string, w *http.ResponseWriter) error {
 		return errors.Join(errors.New("Failed to copy CRT File"), err)
 	}
 
+	measureEnd := time.Now()
+	measureDuration := time.Since(measureStart)
+	if LogWriter != nil {
+		_, err := LogWriter.WriteString("send_csr," + fmt.Sprint(measureStart.UnixNano()) + "," + fmt.Sprint(measureEnd.UnixNano()) + "," + fmt.Sprint(measureDuration.Nanoseconds()) + "\r\n")
+		if err != nil {
+			log.Printf("Writing measurement failed: " + err.Error())
+		}
+	}
+
 	return nil
 }
 
 func PostCsr(w http.ResponseWriter, r *http.Request) {
+	measureStart := time.Now()
+
 	// Validate Content Type
 	contentType := r.Header.Get("content-type")
 	if contentType != "application/pkcs10" {
@@ -122,5 +160,14 @@ func PostCsr(w http.ResponseWriter, r *http.Request) {
 		log.Printf(err.Error())
 		http.Error(w, "Internal Server Error. See log.", http.StatusInternalServerError)
 		return
+	}
+
+	measureEnd := time.Now()
+	measureDuration := time.Since(measureStart)
+	if LogWriter != nil {
+		_, err := LogWriter.WriteString("csr," + fmt.Sprint(measureStart.UnixNano()) + "," + fmt.Sprint(measureEnd.UnixNano()) + "," + fmt.Sprint(measureDuration.Nanoseconds()) + "\r\n")
+		if err != nil {
+			log.Printf("Writing measurement failed: " + err.Error())
+		}
 	}
 }

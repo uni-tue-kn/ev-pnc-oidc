@@ -119,7 +119,7 @@ services:
       # JWT Bearer Authorization:
       - traefik.http.routers.emsp-backend.middlewares=emsp-backend@docker
       - traefik.http.middlewares.emsp-backend.plugin.jwt.issuers=https://${AUTHORIZATION_SERVER_DOMAIN}
-      - traefik.http.middlewares.emsp-backend.plugin.jwt.require.aud=${TRUSTED_AUDIENCE}
+      # - traefik.http.middlewares.emsp-backend.plugin.jwt.require.aud=${TRUSTED_AUDIENCE}
       - traefik.http.middlewares.emsp-backend.plugin.jwt.require.client_id=${AUTHLETE_CLIENT_ID}
       - traefik.http.middlewares.emsp-backend.plugin.jwt.require.iss=https://${AUTHORIZATION_SERVER_DOMAIN}
       - traefik.http.middlewares.emsp-backend.plugin.jwt.require.scope=ccsr
@@ -130,6 +130,7 @@ services:
       - .secrets/csr:/app/csr:rw
       # Location of issued contract certificate files:
       - .secrets/crt:/app/crt:rw
+      - ../benchmark/emsp_backend/:/logs/:rw
 
   # User Agent for certificate provisioning
   user-agent:
