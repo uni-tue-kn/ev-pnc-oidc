@@ -1,6 +1,8 @@
 <?php
   // Handles device completion request where the resource owner grants authorization.
 
+  $start = microtime(true);
+
   // Check session state on validity.
   session_start();
   if (session_status() !== PHP_SESSION_ACTIVE || !isset($_SESSION['username'])) {
@@ -41,6 +43,7 @@
     http_response_code(200);
     header("Content-Type: text/plain");
     echo "Authorization granted";
+    file_put_contents('../../../logs.csv', "complete_device,$elapsed_time\r\n", FILE_APPEND | LOCK_EX);
     exit;
   } else {
     http_response_code(500);

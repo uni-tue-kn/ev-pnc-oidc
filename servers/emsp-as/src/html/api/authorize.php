@@ -1,6 +1,8 @@
 <?php
   // Handles Authorization Submission.
 
+  $start = microtime(true);
+
   // Load configuration.
   require('../../config.php');
 
@@ -27,4 +29,8 @@
   // Redirect to client.
   header('Location: ' . $response->responseContent);
   http_response_code(302);
+
+  $elapsed_time = microtime(true) - $start;
+
+  file_put_contents('../../logs.csv', "authorize,$elapsed_time\r\n", FILE_APPEND | LOCK_EX);
 ?>

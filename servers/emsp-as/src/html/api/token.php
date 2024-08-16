@@ -1,6 +1,8 @@
 <?php
   // Handles Token Request.
 
+  $start = microtime(true);
+
   // Load configuration.
   require('../../config.php');
 
@@ -36,6 +38,7 @@
     http_response_code(400);
     header("Content-Type: application/json");
     echo $response->responseContent;
+    file_put_contents('../../logs.csv', "token,$elapsed_time\r\n", FILE_APPEND | LOCK_EX);
     exit;
   } else {
     http_response_code(500);
