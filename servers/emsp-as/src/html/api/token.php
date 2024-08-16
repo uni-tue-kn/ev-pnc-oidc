@@ -40,12 +40,15 @@
     echo $response->responseContent;
     $end = microtime(true);
     $elapsed_time = $end - $start;
-    file_put_contents('/logs/logs.csv', "token,$start,$end,$elapsed_time\r\n", FILE_APPEND | LOCK_EX);
+    file_put_contents('/logs/logs.csv', "no_token,$start,$end,$elapsed_time\r\n", FILE_APPEND | LOCK_EX);
     exit;
   } else {
     http_response_code(500);
     header("Content-Type: text/plain");
     echo json_encode($response);//->resultMessage;
+    $end = microtime(true);
+    $elapsed_time = $end - $start;
+    file_put_contents('/logs/logs.csv', "token,$start,$end,$elapsed_time\r\n", FILE_APPEND | LOCK_EX);
     exit;
   }
 ?>
