@@ -72,8 +72,10 @@ export class BluetoothHttpProxyService {
     }
     console.log('received status data', bytes);
 
+    const statusCode = (value!.byteLength >= 2) ? value.getUint16(0, true) : value!.getUint8(0);
+
     // Notify about changed status code.
-    this.statusChanged.emit(bytes[0]);
+    this.statusChanged.emit(statusCode);
   }
 
   /**

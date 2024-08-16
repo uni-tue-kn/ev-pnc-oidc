@@ -1,6 +1,8 @@
 <?php
   // Handles device authorization request.
-  
+
+  $start = microtime(true);
+
   // Load configuration.
   require('../../../config.php');
 
@@ -32,6 +34,9 @@
     http_response_code(200);
     header("Content-Type: X-www-form-urlencoded");
     echo $response->responseContent;
+    $end = microtime(true);
+    $elapsed_time = $end - $start;
+    file_put_contents('/logs/logs.csv', "authorize_device,$start,$end,$elapsed_time\r\n", FILE_APPEND | LOCK_EX);
     exit;
   } else {
     http_response_code(500);
