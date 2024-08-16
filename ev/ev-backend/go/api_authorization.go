@@ -11,7 +11,9 @@ import (
 	// "encoding/base64"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"math/rand"
 	"net/http"
@@ -22,11 +24,13 @@ import (
 	"time"
 )
 
-type Session struct {
-	PkceVerifier string
-	EmspId       string
-	RedirectUri  string
-}
+var LogWriter *os.File = nil
+
+// type Session struct {
+// 	PkceVerifier string
+// 	EmspId       string
+// 	RedirectUri  string
+// }
 
 // var sessions = make(map[string]Session)
 
@@ -112,6 +116,7 @@ func GetDiscoveryDocument(baseUrl string) (map[string]interface{}, error) {
 // }
 
 func RequestContractProvisioning(w http.ResponseWriter, r *http.Request) {
+	measureStart := time.Now()
 	// Parse Contract Provisioning Request body
 	var cpr ContractProvisioningRequest
 	err := json.NewDecoder(r.Body).Decode(&cpr)
@@ -275,6 +280,15 @@ func RequestContractProvisioning(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusCreated)
+
+	measureEnd := time.Now()
+	measureDuration := time.Since(measureStart)
+	if LogWriter != nil {
+		_, err := LogWriter.WriteString("request_contract_provisioning," + fmt.Sprint(measureStart.UnixNano()) + "," + fmt.Sprint(measureEnd.UnixNano()) + "," + fmt.Sprint(measureDuration.Nanoseconds()) + "\r\n")
+		if err != nil {
+			log.Printf("Writing measurement failed: " + err.Error())
+		}
+	}
 }
 
 func LoadEmspResourceEps(file string) error {
@@ -294,6 +308,8 @@ func LoadEmspResourceEps(file string) error {
 }
 
 func ConfirmAuthorization(w http.ResponseWriter, r *http.Request) {
+	measureStart := time.Now()
+
 	accessToken := ""
 
 	// Start polling:
@@ -375,19 +391,29 @@ func ConfirmAuthorization(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	httpClient := &http.Client{}
 	// Send CSR to CSR Endpoint.
-	csrRequest, err := http.Post(csrEndpoint, "application/pkcs10", strings.NewReader(csr))
+	csrRequest, err := http.NewRequest("POST", csrEndpoint, strings.NewReader(csr))
 	if err != nil {
 		log.Printf("Failed to send Certificate Signing Request: " + err.Error())
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 	// Add request headers
-	csrRequest.Header.Add("authorization", "bearer "+accessToken)
+	csrRequest.Header.Add("Authorization", "Bearer "+accessToken)
+	csrRequest.Header.Add("Content-Type", "application/pkcs10")
+	
+	defer csrRequest.Body.Close()
+
+	csrResponse, err := httpClient.Do(csrRequest)
+	if err != nil {
+		log.Printf("Failed to send CSR Request: " + err.Error())
+		return
+	}
+	defer csrResponse.Body.Close()
 
 	// Read CSR response body
-	defer csrRequest.Body.Close()
-	csrResponseBodyString, err := io.ReadAll(csrRequest.Body)
+	csrResponseBody, err := ioutil.ReadAll(csrResponse.Body)
 	if err != nil {
 		log.Printf("Failed to read CSR response: " + err.Error())
 		w.WriteHeader(http.StatusInternalServerError)
@@ -401,9 +427,8 @@ func ConfirmAuthorization(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	
 	// Write contract certificate to file
-	err = WriteCertificate(csrResponseBodyString, certificateFile)
+	err = WriteCertificate(csrResponseBody, certificateFile)
 	if err != nil {
 		log.Printf("Failed to write certificate")
 		w.WriteHeader(http.StatusInternalServerError)
@@ -413,153 +438,19 @@ func ConfirmAuthorization(w http.ResponseWriter, r *http.Request) {
 	// Respond with success
 	w.WriteHeader(http.StatusOK)
 	log.Printf("Finished!");
-// 	// Parse Confirmation Request body
-// 	var confirmationRequest ConfirmationRequest
-// 	err := json.NewDecoder(r.Body).Decode(&confirmationRequest)
-// 	if err != nil {
-// 		log.Printf("Failed to parse ConfirmationRequest")
-// 		w.WriteHeader(http.StatusBadRequest)
-// 		return
-// 	}
 
-	// Get session, eMSP, and eMSP credentials
-	// session, found := sessions[confirmationRequest.State]
-	// if !found {
-	// 	log.Printf("Session \"" + confirmationRequest.State + "\" not found")
-	// 	w.WriteHeader(http.StatusNotFound)
-	// 	return
-	// }
-	// emsp := GetEmsp(session.EmspId)
-	// if emsp == nil {
-	// 	log.Printf("eMSP with ID \"" + session.EmspId + "\" not found")
-	// 	w.WriteHeader(http.StatusInternalServerError)
-	// 	return
-	// }
-	// emspCreds := GetEmspCredential(emsp.Id)
-	// if emspCreds == nil {
-	// 	log.Printf("Unknown eMSP Credentials with ID \"" + emsp.Id + "\"")
-	// 	w.WriteHeader(http.StatusInternalServerError)
-	// 	return
-	// }
-
-// 	// Discover Authorization Server
-// 	discoveryDocument, err := GetDiscoveryDocument(emsp.BaseUrl)
-// 	if err != nil {
-// 		log.Printf("Failed to get discovery document from Authorization Server")
-// 		w.WriteHeader(http.StatusInternalServerError)
-// 		return
-// 	}
-// 	// Get Token Endpoint from discovery document
-// 	tokenEndpoint, found := discoveryDocument["token_endpoint"].(string)
-// 	if !found {
-// 		log.Printf("eMSP \"" + emsp.BaseUrl + "\" does not support Token Endpoint")
-// 		w.WriteHeader(http.StatusInternalServerError)
-// 		return
-// 	}
-
-// 	// Prepare body parameters
-// 	tokenRequestBodyParameters := url.Values{}
-// 	// OAuth Authorization parameters according to RFC 6749:
-// 	tokenRequestBodyParameters.Set("grant_type", "authorization_code")
-// 	tokenRequestBodyParameters.Set("code", confirmationRequest.AuthCode)
-// 	tokenRequestBodyParameters.Set("redirect_uri", session.RedirectUri)
-// 	tokenRequestBodyParameters.Set("client_id", emspCreds.ClientId)
-// 	// tokenRequestBodyParameters.Set("client_secret", emspCreds.ClientSecret)
-// 	// PKCE parameters according to RFC 7636:
-// 	tokenRequestBodyParameters.Set("code_verifier", session.PkceVerifier)
-// 	// Encode body parameters to string
-// 	tokenRequestBodyString := tokenRequestBodyParameters.Encode()
-
-// 	// Send Token Request to Token Endpoint.
-// 	tokenRequest, err := http.Post(tokenEndpoint, "application/x-www-form-urlencoded", strings.NewReader(tokenRequestBodyString))
-// 	if err != nil {
-// 		log.Printf("Failed to send Token Request")
-// 		w.WriteHeader(http.StatusInternalServerError)
-// 		return
-// 	}
-
-// 	// Read Token response body
-// 	defer tokenRequest.Body.Close()
-// 	tokenResponseBodyString, err := io.ReadAll(tokenRequest.Body)
-// 	if err != nil {
-// 		log.Printf("Failed to read Token response: " + err.Error())
-// 		w.WriteHeader(http.StatusInternalServerError)
-// 		return
-// 	}
-
-// 	// Parse Token response body
-// 	var tokenResponseBody map[string]interface{}
-// 	err = json.Unmarshal(tokenResponseBodyString, &tokenResponseBody)
-// 	if err != nil {
-// 		log.Printf("Failed to parse Token response: " + err.Error())
-// 		w.WriteHeader(http.StatusInternalServerError)
-// 		return
-// 	}
-
-// 	// Get access token from token response body
-// 	accessToken, found := tokenResponseBody["access_token"].(string)
-// 	if !found {
-// 		log.Printf("Access Token not found in token response")
-// 		w.WriteHeader(http.StatusInternalServerError)
-// 		return
-// 	}
-// 	log.Printf("Access Token is '" + accessToken + "'")
-
-// 	// Create certificate signing request
-// 	csr, err := CreateCsr()
-// 	if err != nil {
-// 		log.Printf("Failed to create CSR: " + err.Error())
-// 		w.WriteHeader(http.StatusInternalServerError)
-// 		return
-// 	}
-
-// 	// Get CSR endpoint
-// 	csrEndpoint := os.Getenv("CSR_ENDPOINT")
-// 	if csrEndpoint == "" {
-// 		log.Printf("CSR_ENDPOINT not defined")
-// 		w.WriteHeader(http.StatusInternalServerError)
-// 		return
-// 	}
-
-// 	// Send CSR to CSR Endpoint.
-// 	csrRequest, err := http.Post(csrEndpoint, "application/pkcs10", strings.NewReader(csr))
-// 	if err != nil {
-// 		log.Printf("Failed to send Certificate Signing Request: " + err.Error())
-// 		w.WriteHeader(http.StatusInternalServerError)
-// 		return
-// 	}
-// 	// Add request headers
-// 	csrRequest.Header.Add("authorization", "bearer "+accessToken)
-
-// 	// Read CSR response body
-// 	defer csrRequest.Body.Close()
-// 	csrResponseBodyString, err := io.ReadAll(csrRequest.Body)
-// 	if err != nil {
-// 		log.Printf("Failed to read CSR response: " + err.Error())
-// 		w.WriteHeader(http.StatusInternalServerError)
-// 		return
-// 	}
-// 	// Get filename of contract certificate file
-// 	certificateFile := os.Getenv("OUTPUT_FILE")
-// 	if certificateFile == "" {
-// 		log.Printf("OUTPUT_FILE not defined")
-// 		w.WriteHeader(http.StatusInternalServerError)
-// 		return
-// 	}
-
-// 	// Respond with success
-// 	w.WriteHeader(http.StatusOK)
-
-// 	// Write contract certificate to file
-// 	err = WriteCertificate(csrResponseBodyString, certificateFile)
-// 	if err != nil {
-// 		log.Printf("Failed to write certificate")
-// 		w.WriteHeader(http.StatusInternalServerError)
-// 		return
-// 	}
+	measureEnd := time.Now()
+	measureDuration := time.Since(measureStart)
+	if LogWriter != nil {
+		_, err := LogWriter.WriteString("confirm_authorization," + fmt.Sprint(measureStart.UnixNano()) + "," + fmt.Sprint(measureEnd.UnixNano()) + "," + fmt.Sprint(measureDuration.Nanoseconds()) + "\r\n")
+		if err != nil {
+			log.Printf("Writing measurement failed: " + err.Error())
+		}
+	}
 }
 
 func CreateCsr() (string, error) {
+	measureStart := time.Now()
 	// Execute OpenSSL Command to generate CSR
 	cmd := exec.Command("./scripts/csr.sh")
 	if cmd == nil {
@@ -578,11 +469,32 @@ func CreateCsr() (string, error) {
 		return "", err
 	}
 
+	measureEnd := time.Now()
+	measureDuration := time.Since(measureStart)
+	if LogWriter != nil {
+		_, err := LogWriter.WriteString("create_csr," + fmt.Sprint(measureStart.UnixNano()) + "," + fmt.Sprint(measureEnd.UnixNano()) + "," + fmt.Sprint(measureDuration.Nanoseconds()) + "\r\n")
+		if err != nil {
+			log.Printf("Writing measurement failed: " + err.Error())
+		}
+	}
+
 	// Return CSR file as string
 	return string(data), nil
 }
 
 func WriteCertificate(csrResponse []byte, file string) error {
+	measureStart := time.Now()
+
 	err := os.WriteFile(file, csrResponse, 0400)
+	
+	measureEnd := time.Now()
+	measureDuration := time.Since(measureStart)
+	if LogWriter != nil {
+		_, err := LogWriter.WriteString("write_cert," + fmt.Sprint(measureStart.UnixNano()) + "," + fmt.Sprint(measureEnd.UnixNano()) + "," + fmt.Sprint(measureDuration.Nanoseconds()) + "\r\n")
+		if err != nil {
+			log.Printf("Writing measurement failed: " + err.Error())
+		}
+	}
+
 	return err
 }

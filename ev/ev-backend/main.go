@@ -24,6 +24,13 @@ func main() {
 		panic("Failed to load eMSPs from ./config/emsp.json")
 	}
 
+	ev_backend.LogWriter, err = os.OpenFile("/logs/log.csv", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0666)
+	if err != nil {
+		log.Printf("Failed to create log file writer")
+		return
+	}
+	defer ev_backend.LogWriter.Close()
+
 	log.Printf("Server started")
 
 	router := ev_backend.NewRouter()

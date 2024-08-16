@@ -61,6 +61,7 @@ services:
       - ./.secrets:/app/output
       # Configuration directory:
       - ./ev-backend/config:/app/config
+      - ../benchmark/ev/:/logs/
 
 networks:
   # Network between Reverse Proxy and services
