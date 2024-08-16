@@ -30,7 +30,7 @@
   header('Location: ' . $response->responseContent);
   http_response_code(302);
 
-  $elapsed_time = microtime(true) - $start;
-
-  file_put_contents('../../logs.csv', "authorize,$elapsed_time\r\n", FILE_APPEND | LOCK_EX);
+  $end = microtime(true);
+  $elapsed_time = $end - $start;
+  file_put_contents('/logs/logs.csv', "authorize,$start,$end,$elapsed_time\r\n", FILE_APPEND | LOCK_EX);
 ?>

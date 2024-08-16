@@ -38,7 +38,9 @@
     http_response_code(400);
     header("Content-Type: application/json");
     echo $response->responseContent;
-    file_put_contents('../../logs.csv', "token,$elapsed_time\r\n", FILE_APPEND | LOCK_EX);
+    $end = microtime(true);
+    $elapsed_time = $end - $start;
+    file_put_contents('/logs/logs.csv', "token,$start,$end,$elapsed_time\r\n", FILE_APPEND | LOCK_EX);
     exit;
   } else {
     http_response_code(500);

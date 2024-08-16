@@ -90,6 +90,7 @@ services:
     volumes:
       # Web files:
       - ./emsp-as/src:/var/www:ro
+      - ../benchmark/as/:/logs/:rw
 
   # eMSP Backend to request X.509 certificates
   emsp-backend:

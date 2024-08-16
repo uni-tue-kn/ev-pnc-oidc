@@ -34,7 +34,9 @@
     http_response_code(200);
     header("Content-Type: X-www-form-urlencoded");
     echo $response->responseContent;
-    file_put_contents('../../../logs.csv', "authorize_device,$elapsed_time\r\n", FILE_APPEND | LOCK_EX);
+    $end = microtime(true);
+    $elapsed_time = $end - $start;
+    file_put_contents('/logs/logs.csv', "authorize_device,$start,$end,$elapsed_time\r\n", FILE_APPEND | LOCK_EX);
     exit;
   } else {
     http_response_code(500);

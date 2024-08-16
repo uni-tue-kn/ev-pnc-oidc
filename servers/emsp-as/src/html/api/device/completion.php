@@ -43,7 +43,9 @@
     http_response_code(200);
     header("Content-Type: text/plain");
     echo "Authorization granted";
-    file_put_contents('../../../logs.csv', "complete_device,$elapsed_time\r\n", FILE_APPEND | LOCK_EX);
+    $end = microtime(true);
+    $elapsed_time = $end - $start;
+    file_put_contents('/logs/logs.csv', "complete_device,$start,$end,$elapsed_time\r\n", FILE_APPEND | LOCK_EX);
     exit;
   } else {
     http_response_code(500);
