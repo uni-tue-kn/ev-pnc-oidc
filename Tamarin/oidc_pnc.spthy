@@ -55,8 +55,6 @@ interactive with:
 tamarin-prover interactive --quit-on-warning --auto-sources oidc_pnc.spthy --stop-on-trace=SEQDFS --heuristic=O --oraclename=oracle +RTS -N6 -RTS
 
 
--DAllow_QR_Leak
--DAllow_QR_Spoof
 
 */
 begin
@@ -84,20 +82,6 @@ rule ChanOut_QR [colour=ffffff]:
     [ Out_S_QR( QR ) ]
   --[ ChanOut_QR( QR ) ]->
     [ Sec_QR( QR )  ] 
-
-#ifdef Allow_QR_Leak
-rule ChanOut_QR [colour=ffffff]:
-	[ Out_S_QR( QR ) ]
-	--[ ChanOut_QR( QR ) ]->
-	[ Sec_QR( QR ), Out( QR )  ] 
-#endif
-
-#ifdef Allow_QR_Spoof
-rule ChanIn_QR [colour=ffffff]:
-    [ Sec_QR( QR_not ), In( QR ) ]
-  --[ ChanIn_QR( QR ) ]->
-    [ In_S_QR( QR ) ]
-#endif
 
 rule ChanIn_QR [colour=ffffff]:
     [ Sec_QR( QR ) ]
