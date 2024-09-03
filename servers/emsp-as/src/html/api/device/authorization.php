@@ -36,7 +36,7 @@
     echo $response->responseContent;
     $end = microtime(true);
     $elapsed_time = $end - $start;
-    file_put_contents('/logs/logs.csv', "authorize_device,$start,$end,$elapsed_time\r\n", FILE_APPEND | LOCK_EX);
+    file_put_contents('/logs/log.csv', "authorize_device,$start,$end,$elapsed_time\r\n", FILE_APPEND | LOCK_EX);
     exit;
   } else {
     http_response_code(500);
