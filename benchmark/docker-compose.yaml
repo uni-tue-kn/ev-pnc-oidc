@@ -1,6 +1,0 @@
-services:
-  benchmark:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    env_file: .env
