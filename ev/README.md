@@ -14,7 +14,7 @@ It is not developed with focus on implementation security.
 
 ## 2. Requirements
 
-- **Hardware**: [Raspberry Pi 5](https://www.raspberrypi.com/products/raspberry-pi-5/) + 32 GB MicroSD card
+- **Hardware**: [Raspberry Pi 3B](https://www.raspberrypi.com/products/raspberry-pi-3-model-b/) or higher + 32 GB MicroSD card
 - **Operating System**: [Raspberry Pi OS Lite 64-bit](https://www.raspberrypi.com/software/)
 
 

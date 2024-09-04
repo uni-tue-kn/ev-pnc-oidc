@@ -49,12 +49,61 @@ docker compose up ble-proxy
 ### 3.1. Bluetooth Server Fails to Start
 
 If the Bluetooth server fails to start, this might be because your Bluetooth hardware is already occupied by your host's Bluetooth daemon.
+The typical error output is:
+```bash
+ble-proxy-1   | Traceback (most recent call last):
+ble-proxy-1   |   File "/app/./gatt_server.py", line 308, in <module>
+ble-proxy-1   |     loop.run_until_complete(run(loop=loop))
+ble-proxy-1   |   File "/usr/local/lib/python3.12/asyncio/base_events.py", line 687, in run_until_complete
+ble-proxy-1   |     return future.result()
+ble-proxy-1   |            ^^^^^^^^^^^^^^^
+ble-proxy-1   |   File "/app/./gatt_server.py", line 213, in run
+ble-proxy-1   |     await server.add_new_service(HPS_SERVICE_UUID)
+ble-proxy-1   |   File "/usr/local/lib/python3.12/site-packages/bless/backends/bluezdbus/server.py", line 146, in add_new_service
+ble-proxy-1   |     await self.setup_task
+ble-proxy-1   |   File "/usr/local/lib/python3.12/site-packages/bless/backends/bluezdbus/server.py", line 65, in setup
+ble-proxy-1   |     potential_adapter: Optional[ProxyObject] = await get_adapter(
+ble-proxy-1   |                                                ^^^^^^^^^^^^^^^^^^
+ble-proxy-1   |   File "/usr/local/lib/python3.12/site-packages/bless/backends/bluezdbus/dbus/utils.py", line 79, in get_adapter
+ble-proxy-1   |     adapter_path: str = await find_adapter(
+ble-proxy-1   |                         ^^^^^^^^^^^^^^^^^^^
+ble-proxy-1   |   File "/usr/local/lib/python3.12/site-packages/bless/backends/bluezdbus/dbus/utils.py", line 59, in find_adapter
+ble-proxy-1   |     raise Exception(f"No adapter named {adapter} found")
+ble-proxy-1   | Exception: No adapter named hci0 found
+```
 
-To fix this, stop the container, and run the following command on your host to stop the Bluetooth daemons on your host:
+To fix this, stop the container:
+```bash
+docker compose down ble-proxy
+```
+Then, run the following command on your host to stop the Bluetooth daemons on your host:
 ```bash
 sudo killall -9 bluetoothd
 ```
-Now, restart the container.
+Now, restart the container:
+```bash
+docker compose up ble-proxy
+```
+
+If the error still persists, stop the container, reboot the host, kill the Bluetooth Daemon, and restart the container:
+```bash
+docker compose down ble-proxy
+sudo reboot
+sudo killall -9 bluetoothd
+docker compose up ble-proxy
+```
+
+If the error still persists, the problem might be a driver issue.
+To solve it, stop the container, update the host, reboot the host, kill the Bluetooth Daemon, and restart the container:
+```bash
+docker compose down ble-proxy
+sudo apt update && sudo apt upgrade -y
+sudo reboot
+sudo killall -9 bluetoothd
+docker compose up ble-proxy
+```
+
+If the error still persists, ensure that the Bluetooth interface is activated on your host and that the issue is not caused by a hardware problem.
 
 
 ### 3.2. Writing Characteristic Values Fails
