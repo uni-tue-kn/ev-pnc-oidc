@@ -32,5 +32,5 @@
 
   $end = microtime(true);
   $elapsed_time = $end - $start;
-  file_put_contents('/logs/logs.csv', "authorize,$start,$end,$elapsed_time\r\n", FILE_APPEND | LOCK_EX);
+  file_put_contents('/logs/log.csv', "authorize,$start,$end,$elapsed_time\r\n", FILE_APPEND | LOCK_EX);
 ?>

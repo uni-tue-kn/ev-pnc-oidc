@@ -8,6 +8,6 @@ fi
 
 while true
 do
-  docker stats --no-stream --format "table $(date +%s%N),{{.Container}},{{.Name}},{{.ID}},{{.CPUPerc}},{{.MemUsage}},{{.NetIO}},{.BlockIO}" >> $OUT_FILE
+  docker stats --no-stream --format "table $(date +%s%N),{{.Container}},{{.Name}},{{.ID}},{{.CPUPerc}},{{.MemUsage}},{{.NetIO}},{{.BlockIO}}" >> $OUT_FILE
   sleep 1
 done

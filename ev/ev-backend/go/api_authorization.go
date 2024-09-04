@@ -250,7 +250,7 @@ func RequestContractProvisioning(w http.ResponseWriter, r *http.Request) {
 
 	// Create and serialize response
 	result := ContractProvisioningResponse{
-		UserCode: 			 responseBody.UserCode,
+		UserCode:        responseBody.UserCode,
 		VerificationUri: responseBody.VerificationUri,
 	}
 	resultData, err := json.Marshal(result)
@@ -262,7 +262,7 @@ func RequestContractProvisioning(w http.ResponseWriter, r *http.Request) {
 
 	// Write header and status code
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-	
+
 	// Write serialized result
 	_, err = w.Write(resultData)
 	if err != nil {
@@ -315,9 +315,18 @@ func ConfirmAuthorization(w http.ResponseWriter, r *http.Request) {
 	// Start polling:
 	for time.Now().Before(endTime) {
 		// Wait for interval
+		measureWaitStart := time.Now()
 		time.Sleep(time.Duration(interval) * time.Second)
+		measureWaitEnd := time.Now()
+		measureWaitDuration := time.Since(measureWaitStart)
+		if LogWriter != nil {
+			_, err := LogWriter.WriteString("waiting," + fmt.Sprint(measureWaitStart.UnixNano()) + "," + fmt.Sprint(measureWaitEnd.UnixNano()) + "," + fmt.Sprint(measureWaitDuration.Nanoseconds()) + "\r\n")
+			if err != nil {
+				log.Printf("Writing measurement failed: " + err.Error())
+			}
+		}
 
-		log.Printf("Polling with device code " + deviceCode + "...");
+		log.Printf("Polling with device code " + deviceCode + "...")
 
 		// Prepare body parameters
 		tokenRequestBodyParameters := url.Values{}
@@ -402,7 +411,7 @@ func ConfirmAuthorization(w http.ResponseWriter, r *http.Request) {
 	// Add request headers
 	csrRequest.Header.Add("Authorization", "Bearer "+accessToken)
 	csrRequest.Header.Add("Content-Type", "application/pkcs10")
-	
+
 	defer csrRequest.Body.Close()
 
 	csrResponse, err := httpClient.Do(csrRequest)
@@ -434,10 +443,10 @@ func ConfirmAuthorization(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	
+
 	// Respond with success
 	w.WriteHeader(http.StatusOK)
-	log.Printf("Finished!");
+	log.Printf("Finished!")
 
 	measureEnd := time.Now()
 	measureDuration := time.Since(measureStart)
@@ -486,7 +495,7 @@ func WriteCertificate(csrResponse []byte, file string) error {
 	measureStart := time.Now()
 
 	err := os.WriteFile(file, csrResponse, 0400)
-	
+
 	measureEnd := time.Now()
 	measureDuration := time.Since(measureStart)
 	if LogWriter != nil {
