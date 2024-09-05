@@ -7,8 +7,8 @@ mkdir -p ./ca
 
 # Generate the Key Pair of the Certificate Authority, if not exists
 if [ ! -f "./ca/ca.key" ]; then
-    # Generate an elliptic curve key pair for ES256
-    openssl ecparam -name prime256v1 -genkey -noout -out ./ca/ca.key
+    # Generate an elliptic curve key pair for ES512
+    openssl ecparam -name secp521r1 -genkey -noout -out ./ca/ca.key
 fi
 
 # Generate a self-signed X.509 Certificate Authority Root Certificate valid for 2 years, if not exists
