@@ -53,10 +53,24 @@ elif 'correctness' in lemma:
   for line in lines:
     num = line.split(':')[0]
 
-    if re.match('.*!Pk\(.*', line): rank[106].append(num)
-    elif re.match('.*!KU\( mac\(.*', line): rank[50].append(num)
-    elif re.match('.*!KU\( senc\(.*', line): rank[50].append(num)
-    elif re.match('.*!KU\( aenc\(.*', line): rank[50].append(num)
+    if re.match('.*!Pk\(.*', line): rank[106].append(num) #
+
+    elif re.match('.*\(∃ #j', line): rank[145].append(num)
+    elif re.match('.*!KU\( mac\(.*', line): rank[141].append(num)
+    elif re.match('.*!KU\( senc\(\<\'device_access_token_req.*', line): rank[119].append(num)
+    elif re.match('.*!KU\( senc\(\<.*\'req_cont_prov.*', line): rank[119].append(num)
+    elif re.match('.*!KU\( senc\(.*', line): rank[141].append(num)
+    elif re.match('.*!KU\( aenc\(.*', line): rank[141].append(num)
+    elif re.match('.*In_S_V\(.*numeric_comparision.*', line): rank[142].append(num)
+
+    elif re.match('.*\w+\( \)', line): rank[130].append(num) #
+    elif re.match('.*User_Agent_connects_to_EV', line): rank[120].append(num)
+    elif re.match('.*EV_prepares_Token_Request2_dev_auth', line): rank[121].append(num)
+    elif re.match('.*!EV_ID_.*\(.*', line): rank[132].append(num)
+    elif re.match('.*!EMSP_.*\(.*', line): rank[132].append(num)
+    elif re.match('.*!User_Pa.*\(.*', line): rank[132].append(num)
+    elif re.match('.*EV_State0.*\(.*', line): rank[91].append(num)
+
     elif re.match('.*In_S_V\(.*', line): rank[70].append(num)
     elif re.match('.*In_S_QR\(.*', line): rank[91].append(num)
     elif re.match('.*_State.*\(.*', line): rank[90].append(num)
@@ -65,12 +79,10 @@ elif 'correctness' in lemma:
     elif re.match('.*EV_.*\(.*', line): rank[80].append(num)
     elif re.match('.*Request_.*\(.*', line): rank[80].append(num)
     elif re.match('.*Token.*\(.*', line): rank[80].append(num)
-    elif re.match('.*!EV_.*\(.*', line): rank[80].append(num)
-    elif re.match('.*!EMSP_.*\(.*', line): rank[80].append(num)
     #
     elif re.match('.*!KU\( ~Na.*', line): rank[5].append(num)
     elif re.match('.*!KU\( ~Nb.*', line): rank[5].append(num)
-    elif re.match('.*!KU\( ~.*', line): rank[92].append(num)
+    elif re.match('.*!KU\( ~.*', line): rank[2].append(num)
     elif re.match('.*', line): rank[15].append(num)
 
 # elif 'User_' in lemma:
@@ -85,7 +97,7 @@ elif 'correctness' in lemma:
 #     elif re.match('.*', line): rank[15].append(num)
 
 
-elif 'EV_LTK_UA' in lemma: #
+elif 'EV_LTK_UA' in lemma and False: #
   print("applying lemma",lemma)
   for line in lines:
     num = line.split(':')[0]
@@ -95,9 +107,40 @@ elif 'EV_LTK_UA' in lemma: #
     elif re.match('.*EV_State4\(.*', line): rank[112].append(num)
     elif re.match('.*!KU\( mac\(.* ~OOB_rb', line): rank[60].append(num)
     #
+    elif re.match('.*!KU\( senc\(<\'device_authorization_res\',.* ~TLS_Key.*', line): rank[110].append(num)
     elif re.match('.*!KU\( senc\(<\'device_authorization_res\',.* ~OOB_rb.*', line): rank[110].append(num)
     elif re.match('.*!KU\( ~OOB_rb.*', line): rank[110].append(num)
     elif re.match('.*!KU\( ~client_secret.*', line): rank[5].append(num)
+    elif re.match('.*!KU\( ~pw.*', line): rank[5].append(num)
+    elif re.match('.*!KU\( ~user_code.*', line): rank[5].append(num)
+    elif re.match('.*!KU\( ~EMSP_SK.*', line): rank[5].append(num)
+    elif re.match('.*!KU\( ~TLS_Key.*', line): rank[5].append(num)
+    elif re.match('.*!KU\( x\^\(x.*', line): rank[5].append(num)
+    elif re.match('.*!KU\( ~SK.*', line): rank[140].append(num)
+    # elif re.match('.*!KU\( ~OOB_rb.*', line): rank[119].append(num)
+    #
+    elif re.match('.*', line): rank[15].append(num)
+
+elif 'EV_LTK_UA' in lemma: #
+  print("applying lemma",lemma)
+  for line in lines:
+    num = line.split(':')[0]
+    if re.match('.*!Pk\(.*', line): rank[150].append(num) 
+    if re.match('.*!OEM_OAuth_Sk\(.*', line): rank[150].append(num) 
+    elif re.match('.*!KU\( mac\(.*DHKey', line): rank[100].append(num)
+    elif re.match('.*!KU\( mac\(\<\'1\'.*PKa\.\d\^~SKb', line): rank[100].append(num)
+    elif re.match('.*!KU\( mac\(PKa\.\d\^~SKb', line): rank[100].append(num)
+    elif re.match('.*!KU\( PKa\.\d\^~SKb', line): rank[100].append(num)
+    elif re.match('.*!KU\( PKa\^~SKb', line): rank[100].append(num)
+    elif re.match('.*!KU\( DHKey\^inv\(~SKb', line): rank[100].append(num)
+    elif re.match('.*EV_State4\(.*', line): rank[90].append(num)
+    #
+    elif re.match('.*!KU\( senc\(<\'device_authorization_res\',.* ~TLS_Key_EV.*', line): rank[110].append(num)
+    elif re.match('.*!KU\( senc\(<\'device_authorization_res\', ~SKb.* ~TLS_Key.*', line): rank[101].append(num)
+    elif re.match('.*!KU\( senc\(<\'device_authorization_res\',.* ~TLS_Key.*', line): rank[91].append(num)
+    elif re.match('.*In_S_V\( \<.*numeric_comparision.*', line): rank[147].append(num)
+    #
+    elif re.match('.*!KU\( ~Nb.*', line): rank[5].append(num)
     elif re.match('.*!KU\( ~SK.*', line): rank[140].append(num)
     # elif re.match('.*!KU\( ~OOB_rb.*', line): rank[119].append(num)
     #
@@ -110,14 +153,30 @@ elif 'Dev_Auth' in lemma: #
     if re.match('.*!Pk\(.*', line): rank[150].append(num) 
     elif re.match('.*Token_Request1_LTK\(.*', line): rank[112].append(num)
     elif re.match('.*EV_State4\(.* ~OOB_rb\.\d.*', line): rank[55].append(num)
-    elif re.match('.*EV_State4\(.*', line): rank[112].append(num)
+    elif re.match('.*EV_State4\(.*', line): rank[66].append(num)
+    elif re.match('.*EV_State_tok1\(.*', line): rank[67].append(num)
     elif re.match('.*!KU\( mac\(.* ~OOB_rb', line): rank[60].append(num)
+    elif re.match('.*!KU\( DHKey\^.*', line): rank[60].append(num)
+    elif re.match('.*!KU\( mac\(.*\^~SK', line): rank[53].append(num)
+    elif re.match('.*!KU\( aenc\(.*~TLS_Key_EV,', line): rank[68].append(num)
     #
-    elif re.match('.*!KU\( senc\(<\'device_authorization_res\',.* ', line): rank[141].append(num)
+    elif re.match('.*!KU\( PKa\^~SKb.* ', line): rank[111].append(num)
+    elif re.match('.*!KU\( PKa\^\(~SKb.* ', line): rank[111].append(num)
+    elif re.match('.*!KU\( senc\(<.*PKa\^~SKb.* ', line): rank[52].append(num)
+    elif re.match('.*!KU\( senc\(<\'device_authorization_res\',.* ', line): 
+      if len(lines) == 2: rank[99].append(num)
+      else: rank[66].append(num)
     elif re.match('.*!KU\( ~OOB_rb.*', line): rank[110].append(num)
+
+    elif re.match('.*!KU\( ~pw.*', line): rank[5].append(num)
+    elif re.match('.*!KU\( ~user_code.*', line): rank[5].append(num)
+    elif re.match('.*!KU\( ~device_code.*', line): rank[5].append(num)
+    elif re.match('.*!KU\( ~TLS_Key_EV \)', line): rank[69].append(num)
+    elif re.match('.*!KU\( ~TLS_Key.*', line): rank[5].append(num)
+
     elif re.match('.*!KU\( ~client_secret.*', line): rank[5].append(num)
     elif re.match('.*!KU\( ~SK.*', line): rank[140].append(num)
-    elif re.match('.*!KU\( ~EMSP_SK.*', line): rank[140].append(num)
+    elif re.match('.*!KU\( ~EMSP_SK.*', line): rank[65].append(num)
     # elif re.match('.*!KU\( ~OOB_rb.*', line): rank[119].append(num)
     #
     elif re.match('.*', line): rank[15].append(num)
@@ -393,6 +452,7 @@ elif 'auth' in lemma and 'UA_EV' in lemma:
   for line in lines:
     num = line.split(':')[0]
     if re.match('.*!Pk\(.*', line): rank[150].append(num) 
+    elif re.match('.*\(∃ #j', line): rank[12].append(num)
     elif re.match('.*In_S_V\( \<\$device\_name\,.*', line): rank[107].append(num)
     elif re.match('.*!KU\( mac\(<Na.*DHKey', line): rank[118].append(num)
     elif re.match('.*EV_State8\(.*', line): rank[94].append(num)
@@ -400,14 +460,17 @@ elif 'auth' in lemma and 'UA_EV' in lemma:
     elif re.match('.*EV_State4\(.*', line): rank[116].append(num)
     elif re.match('.*!KU\( mac\(.*DHKey', line): rank[117].append(num)
     # elif re.match('.*!KU\( DHKey\^inv\(~SK.*', line): rank[110].append(num)
+
+    elif re.match('.*!KU\( x\^\(x.*?\*inv\(.*', line): rank[9].append(num)
+    elif re.match('.*!KU\( ~TLS_Key.*', line): rank[9].append(num)
     
-    elif re.match('.*!KU\( senc\(<\'device_authorization_res\', .*~OOB_rb.*', line): rank[119].append(num)
+    elif re.match('.*!KU\( senc\(<\'device_authorization_res\',.*', line): rank[119].append(num)
     elif re.match('.*!KU\( ~OOB_rb.*', line): rank[115].append(num)
     elif re.match('.*!KU\( PK\w\^\(~SK.*', line): rank[110].append(num)
     elif re.match('.*!KU\( PK\w\^~SK.*', line): rank[110].append(num)
     elif re.match('.*!KU\( ~client_secret.*', line): rank[5].append(num)
-    elif re.match('.*!KU\( ~SK.*', line): rank[140].append(num)
-    elif re.match('.*!KU\( ~TLS_Key.*', line): rank[100].append(num)
+    elif re.match('.*!KU\( ~Nb.*', line): rank[5].append(num)
+    elif re.match('.*!KU\( ~SK.*', line): rank[116].append(num)
     elif re.match('.*!KU\( ~EMSP_SK.*', line): rank[100].append(num)
     # elif re.match('.*!KU\( ~OOB_rb.*', line): rank[140].append(num)
     elif re.match('.*', line): rank[15].append(num)
@@ -428,7 +491,7 @@ elif 'auth' in lemma and 'EV_UA' in lemma:
     #
     elif re.match('.*', line): rank[15].append(num)
 
-elif ('auth' in lemma and 'non_inj' in lemma and 'EV_EMSP' in lemma):
+elif ('auth' in lemma and 'non_inj' in lemma and 'EV_EMSP' in lemma and False):
   print("applying lemma",lemma)
   early_cert_req=False
   early_EMSP_State_tokReq2=False
@@ -592,6 +655,7 @@ elif ('auth' in lemma and 'EV_EMSP' in lemma):
   early_senc_ip=False
   early_auth_code=False
   early_tls=False
+  early_auth_req=False
 
   if len([0 for line in lines if "User_Agent_connects_to_EV5_LTK( $user_name" in line]) > 1:
     early_tls=True
@@ -600,8 +664,13 @@ elif ('auth' in lemma and 'EV_EMSP' in lemma):
       early_EMSP_State_tokReq2=True
     if "EMSP_State_tokReq2" in line: 
       early12=True
+    if "EMSP_State_tokReq2" in line and len(lines)==2: 
+      early_cert_req=True
     if "!KU( ~access_token"in line:
       earlysign=True
+      for line in lines:
+        if "!KU( sign(<'ccsr"in line:
+          early_auth_req=True
     if re.match('.*!KU\( x\.\d\^x\.\d', line):
       early_senc_ip=True
     # if "User_Agent_connects_to_EV5_LTK" in line: 
@@ -611,6 +680,7 @@ elif ('auth' in lemma and 'EV_EMSP' in lemma):
   for line in lines:
     num = line.split(':')[0]
     if re.match('.*!EMSP_Sk\(.*', line): rank[150].append(num) 
+    elif re.match('.*In_S_V\( \<.*numeric_comparision.*', line): rank[147].append(num)
     elif re.match('.*In_S_V\( \<\$device\_name\,.*PK\w\^\(~SK.*', line): rank[115].append(num)
     elif re.match('.*In_S_V\( \<\$device\_name\,.*', line): rank[85].append(num)
     elif re.match('.*User_Agent_State10\(.*', line): rank[90].append(num)
@@ -618,11 +688,15 @@ elif ('auth' in lemma and 'EV_EMSP' in lemma):
     # elif re.match('.*User_Agent_connects_to_EV5_LTK\(.*', line): rank[120].append(num)
     elif re.match('.*User_Agent_State3\(.*mac\(<\'g\'\^\(~SK\w\*~SK.*', line): rank[144].append(num)
     elif re.match('.*User_Agent_State3\(.*', line): rank[133].append(num)
-    elif re.match('.*User_Agent_connects_to_EV5_LTK\(.*DHKey.*', line): rank[133].append(num)
-    elif re.match('.*User_Agent_connects_to_EV5_LTK\(.*PKa\^~SKb.*', line): rank[133].append(num)
+    elif re.match('.*User_Agent_connects_to_EV5_LTK\(.*DHKey.*', line): rank[146].append(num)
+    elif re.match('.*User_Agent_connects_to_EV5_LTK\(.*PKa\^~SKb.*', line): rank[146].append(num)
+    elif re.match('.*User_Agent_connects_to_EV5_LTK\(.*x\^inv\(.*', line): rank[146].append(num)
     elif re.match('.*User_Agent_connects_to_EV5_LTK\(.*x\.1\^inv\(.*', line): rank[133].append(num)
+    elif re.match('.*User_Agent_connects_to_EV5_LTK\(.*x\^x\.1.*', line): rank[146].append(num)
     elif re.match('.*User_Agent_connects_to_EV5_LTK\(.*x\.1\^x\.2.*', line): rank[133].append(num)
+    elif re.match('.*User_Agent_connects_to_EV5_LTK\(.*x\^\(x\.1.*', line): rank[146].append(num)
     elif re.match('.*User_Agent_connects_to_EV5_LTK\(.*x\.1\^\(x\.2.*', line): rank[133].append(num)
+    elif re.match('.*User_Agent_connects_to_EV5_LTK\(.*x\^\(~SKb\*x.*', line): rank[146].append(num)
     elif re.match('.*User_Agent_connects_to_EV5_LTK\(.*x\.\d\^\(~SKb\*x.*', line): rank[103].append(num)
     elif re.match('.*User_Agent_connects_to_EV5_LTK\(.*', line): rank[104].append(num)
     elif re.match('.*User_Agent_State_auth3\(.*mac\(<\'', line): rank[115].append(num)
@@ -638,9 +712,11 @@ elif ('auth' in lemma and 'EV_EMSP' in lemma):
     elif re.match('.*!KU\( mac\(.*DHKey', line): rank[105].append(num)
     # elif re.match('.*!KU\( mac\(<\'1\'.*mac\(\'g\'\^', line): rank[0].append(num)
     #
+    #
     #elif re.match('.*!KU\( senc\(<\'device_authorization\',.*adec\(.* ', line): rank[122].append(num)
     #elif re.match('.*!KU\( adec\(enc_TLS_Key_EV.* ', line): rank[123].append(num)
     elif re.match('.*!KU\( senc\(<\'device_authorization_res\',.*~TLS_Key.*', line): rank[145].append(num)
+    elif re.match('.*!KU\( senc\(<\'device_access_token_req.*', line): rank[104].append(num)
     #
     elif re.match('.*!KU\( aenc\(mac\(<\'1\'.*mac\(\'g\'\^\(~SK\w.*~SK\w.*~EMSP_SK', line): rank[141].append(num)
     elif re.match('.*!KU\( mac\(<\'1\'.*mac\(\'g\'\^\(~SK\w.*~SK\w.*', line): rank[142].append(num)
@@ -650,13 +726,18 @@ elif ('auth' in lemma and 'EV_EMSP' in lemma):
     elif re.match('.*!KU\( aenc\(~TLS_Key.*~EMSP_SK', line): rank[100].append(num)
     elif re.match('.*!KU\( aenc\(~.*~EMSP_SK', line): rank[117].insert(0,num)
     elif re.match('.*!KU\( aenc\(z.*~EMSP_SK', line): rank[100].append(num)
+    elif re.match('.*!KU\( aenc\(TLS_Key.*~EMSP_SK', line): rank[104].append(num)
     elif re.match('.*!KU\( aenc\(.*~EMSP_SK', line): rank[117].append(num)
     elif re.match('.*!KU\( mac\(<\'1\'.*mac\(\'g\'\^', line): rank[122].append(num)
     elif re.match('.*!KU\( mac\(<\'1\'', line): rank[112].append(num)
     elif re.match('.*!KU\( mac\(PK\w', line): rank[112].append(num)
     elif re.match('.*!KU\( mac\(\'g\'\^', line): rank[122].append(num)
+    #elif re.match('.*!KU\( senc\(.*~pw.*adec\(.*', line): rank[135].append(num)
     elif re.match('.*!KU\( senc\(.*adec\(.*', line): rank[125].append(num)
     elif re.match('.*!KU\( senc\(<\'Authorization_Request\'.*~pw, ~user_code.*z', line): rank[105].append(num)
+    elif re.match('.*!KU\( senc\(<\'Authorization_Request\'.*~pw\.\d,\ *~user_code.*z', line): 
+      if early_auth_req: rank[105].append(num)
+      else: rank[105].append(num)
     elif re.match('.*!KU\( senc\(<\'Authorization_Request\'.*~pw.*z', line): rank[105].append(num)
     elif re.match('.*!KU\( senc\(.*~pw', line): rank[116].append(num)
     elif re.match('.*!KU\( senc\(<\'cert_req.*TLS_Key', line): 
@@ -672,11 +753,10 @@ elif ('auth' in lemma and 'EV_EMSP' in lemma):
     elif re.match('.*!KU\( senc\(<user_ip.*~device_code.*', line): 
       if early_senc_ip: rank[120].append(num)
       else: rank[113].append(num)
-    elif re.match('.*!KU\( senc\(<\'device_access_token_req.*', line): rank[118].append(num)
     elif re.match('.*!KU\( senc\(<\'oem_app.*enc_TLS_Key', line): rank[95].append(num)
     elif re.match('.*!KU\( senc\(<.*\'req_cont_prov.*PKa\^~SKb', line): rank[95].append(num)
     elif re.match('.*!KU\( sign\(.*~SK', line): 
-      if earlysign: rank[125].append(num)
+      if earlysign: rank[124].append(num)
       else: rank[120].append(num)
     #
     # elif re.match('.*!KU\( senc\(<\'Authorization_Request_Redirect\'.*', line): rank[117].append(num)
@@ -887,12 +967,14 @@ elif ('auth' in lemma and 'User_EMSP' in lemma):
     elif re.match('.*User_Agent_State_auth5\(.*', line): rank[120].append(num)
     elif re.match('.*!User_Password\(.*', line): rank[120].append(num)
     elif re.match('.*EMSP_State_tok1\(.*', line): rank[14].append(num)
+    elif re.match('.*\(\#i2 \< \#i.*', line): rank[14].append(num)
     #
     elif re.match('.*!KU\( senc\(<\'Authorization_Request_Redirect\'.*', line): rank[117].append(num)
     elif re.match('.*!KU\( senc\(<\'Authorization_Request\'.*', line): rank[118].append(num)
     elif re.match('.*!KU\( senc\(<\'Authorization_Response\'.*', line): rank[119].append(num)
     elif re.match('.*!KU\( adec\(enc_TLS_Key_UA.*', line): rank[119].append(num)
     elif re.match('.*!KU\( aenc\(key.*', line): rank[10].append(num)
+    elif re.match('.*In_S_V\( \<.*numeric_comparision.*', line): rank[131].append(num)
     #
     elif re.match('.*!KU\( senc\(<\'device_authorization_res\',.* ', line): rank[141].append(num)
     #
@@ -994,6 +1076,9 @@ elif 'auth' in lemma and 'EMSP_EV_CC' in lemma:
   for line in lines:
     num = line.split(':')[0]
     if re.match('.*!EMSP_Sk\(.*', line): rank[150].append(num) 
+    #
+    elif re.match('.*In_S_V\( \<.*numeric_comparision.*', line): rank[147].append(num)
+    #
     elif re.match('.*In_S_V\( \<\$device\_name\,.*PK\w\^\(~SK.*', line): rank[115].append(num)
     elif re.match('.*User_Agent_State_auth5\(.*', line): rank[120].append(num)
     elif re.match('.*User_Agent_State_auth1\(.*', line): rank[131].append(num)

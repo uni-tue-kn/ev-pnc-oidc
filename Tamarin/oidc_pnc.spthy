@@ -11,40 +11,33 @@ summary of summaries:
 
 analyzed: oidc_pnc.spthy
 
-  corr_User_LTK (all-traces): verified (6 steps)
-  corr_User_SK (all-traces): verified (10 steps)
-  corr_EV_LTK (all-traces): verified (8 steps)
-  corr_EV_LTK_UA (all-traces): verified (569 steps)
-  corr_Dev_Auth (all-traces): verified (1512 steps)
+  reuse_User_LTK (all-traces): verified (50 steps)
+  reuse_User_SK (all-traces): verified (14 steps)
+  reuse_EV_LTK (all-traces): verified (8 steps)
   correctness_simple6 (exists-trace): verified (16 steps)
-  correctness_simple7 (exists-trace): verified (30 steps)
-  correctness_simple81 (exists-trace): verified (35 steps)
-  correctness_simple82 (exists-trace): verified (40 steps)
-  correctness_simple83 (exists-trace): verified (40 steps)
-  correctness_simple8 (exists-trace): verified (44 steps)
-  correctness_simple9 (exists-trace): verified (60 steps)
-  auth1_weak_UA_EV (all-traces): verified (564 steps)
-  auth1_non_inj_UA_EV (all-traces): verified (564 steps)
-  auth1_inj_UA_EV (all-traces): verified (575 steps)
-  auth2_weak_EV_UA0 (all-traces): verified (753 steps)
-  auth2_weak_EV_UA (all-traces): verified (753 steps)
-  auth2_non_inj_EV_UA (all-traces): verified (753 steps)
-  auth2_inj_EV_UA (all-traces): verified (755 steps)
-  auth3_non_inj_User_EMSP (all-traces): verified (948 steps)
-  auth3_inj_User_EMSP (all-traces): verified (956 steps)
-  auth4_non_inj_EMSP_User (all-traces): verified (1764 steps)
-  auth4_non_inj_EMSP_User2 (all-traces): verified (1764 steps)
-  auth5_non_inj_EV_EMSP (all-traces): verified (47170 steps)
-  auth5_inj_EV_EMSP (all-traces): verified (51322 steps)
-  auth6_non_inj_EMSP_EV_CC (all-traces): verified (4804 steps)
-  auth6_inj_EMSP_EV_CC (all-traces): verified (4828 steps)
-  AUTO_typing (all-traces): verified (10775 steps)
+  correctness_simple7 (exists-trace): verified (24 steps)
+  correctness_simple81 (exists-trace): verified (28 steps)
+  correctness_simple82 (exists-trace): verified (33 steps)
+  correctness_simple83 (exists-trace): verified (30 steps)
+  correctness_simple8 (exists-trace): verified (30 steps)
+  correctness_simple9 (exists-trace): verified (40 steps)
+  auth2_weak_EV_UA0 (all-traces): verified (1656 steps)
+  auth2_weak_EV_UA (all-traces): verified (1656 steps)
+  auth2_non_inj_EV_UA (all-traces): verified (1656 steps)
+  auth2_inj_EV_UA (all-traces): verified (1657 steps)
+  auth3_non_inj_User_EMSP (all-traces): verified (5030 steps)
+  auth3_inj_User_EMSP (all-traces): verified (5050 steps)
+  auth5_non_inj_EV_EMSP (all-traces): verified (8661 steps)
+  auth5_inj_EV_EMSP (all-traces): verified (43557 steps)
+  auth6_non_inj_EMSP_EV_CC (all-traces): verified (8560 steps)
+  auth6_inj_EMSP_EV_CC (all-traces): verified (8596 steps)
+  AUTO_typing (all-traces): verified (4941 steps)
 
 ==============================================================================
 
-real    228m19.621s
-user    1159m7.266s
-sys     1156m58.208s
+real	325m16,285s
+user	1170m52,795s
+sys	699m45,870s
 
 
 
@@ -53,7 +46,6 @@ tested with Tamarin 1.6.1
 
 interactive with:
 tamarin-prover interactive --quit-on-warning --auto-sources oidc_pnc.spthy --stop-on-trace=SEQDFS --heuristic=O --oraclename=oracle +RTS -N6 -RTS
-
 
 
 */
@@ -77,16 +69,6 @@ equations:
 	
 
 
-// *** Secure Channel rules (QR) ***
-rule ChanOut_QR [colour=ffffff]:
-    [ Out_S_QR( QR ) ]
-  --[ ChanOut_QR( QR ) ]->
-    [ Sec_QR( QR )  ] 
-
-rule ChanIn_QR [colour=ffffff]:
-    [ Sec_QR( QR ) ]
-  --[ ChanIn_QR( QR ) ]->
-    [ In_S_QR( QR ) ]
 
 // *** Secure Channel rules (visual) ***
 rule ChanOut_V [colour=ffffff]:
@@ -138,15 +120,37 @@ rule LongTermKey_KeyReveal_EMSP:
 --[ KeyReveal('LongTermKey_KeyReveal_EMSP', entity) ]->
 [	Out(key) ]
 
+
+rule OEM_OAuth_Setup:
+let
+	OAuth_PK = pk(~OAuth_SK)
+in
+[ Fr(~OAuth_SK) ]
+--[ //Restrictions
+	OnlyOnce(<'OEM_OAuth_Setup', $OEM_Name, $EV_Client_ID>), 
+	
+	// Correctness events
+	OEM_OAuth_Setup(),
+	OnlyOnce_Correctness(<'OEM_OAuth_Setup', $OEM_Name>)
+]->
+[	
+	Out( <$OEM_Name, $EV_Client_ID, OAuth_PK> ),
+	!OEM_OAuth_Pk( $OEM_Name, $EV_Client_ID, OAuth_PK ),
+	!OEM_OAuth_Sk( $OEM_Name, $EV_Client_ID, ~OAuth_SK )
+]
+
+rule LongTermKey_KeyReveal_OAuth:
+[	!OEM_OAuth_Sk( entity, client, key ) ] 
+--[ KeyReveal('LongTermKey_KeyReveal_OAuth', entity), KeyReveal('LongTermKey_KeyReveal_OAuth', client) ]->
+[	Out(key) ]
+
+
 rule EV_starts_Setup:
 let
 	PKb = 'g'^~SKb
-	Cb = f4(PKb, PKb, ~OOB_rb, '0')
-	QR = <$device_name, $reg_endpoint, ~OOB_rb, Cb>
 in
 [
-	Fr(~SKb),
-	Fr(~OOB_rb)
+	Fr(~SKb)
 ]
 --[ //Restrictions
 	//OnlyOnce(<'EV_starts_Setup', $device_name>), 
@@ -157,25 +161,9 @@ in
 	OnlyOnce_Correctness('EV_starts_Setup')
 ]->
 [	
-	Out_S_QR( QR ), // assume secure QR Code scan
-	EV_State0($device_name, $reg_endpoint, ~SKb, ~OOB_rb)
+	EV_State0($device_name, $reg_endpoint, ~SKb)
 ]
 
-rule EV_ID:
-[
-]
---[ //Restrictions
-	OnlyOnce(<'EV_ID', $evId>), 
-	OnlyOnce(<'EV_ID', $device_name>), 
-	OnlyOnce(<'EV_ID', $reg_endpoint>), 
-	
-	// Correctness events
-	EV_ID(),
-	OnlyOnce_Correctness('EV_ID')
-]->
-[	
-	!EV_ID_device($device_name, $reg_endpoint, $evId)
-]
 
 rule User_Password_Setup:
 [ 
@@ -209,26 +197,21 @@ rule LongTermKey_KeyReveal_Password_emsp:
 /******************************************/
 // LE Secure Connections pairing phase 2
 /******************************************/
-//"But when the pairing
-// is initiated by an OOB interface, public key exchange will happen after the
-// OOB communication
+
 
 /******************************************/
-// Authentication stage 1 – OOB
+// Authentication stage 1 – Num Comp
 /******************************************/
 
 rule User_Agent_connects_to_EV3_secure:
 let
-	QR = <$device_name, $reg_endpoint, OOB_rb, Cb>
-
-	IOcapA = <'IO_Yes', 'OOB_Yes', 'AuthReq_MITM', 'etc'> 
+	IOcapA = <'IO_Yes', 'OOB_No', 'AuthReq_MITM', 'etc'> 
 	PKa = 'g'^~SKa
 	BLE_PKa = <$user_name, $device_name, IOcapA, PKa, ~Na>
 
 	IOcapB_OOB = fst(snd(IOcapB))
 in
 [ 
-	In_S_QR(QR),
 	Fr(~SKa),
 	Fr(~Na) //early Na for simplicity 
 ] 
@@ -246,7 +229,7 @@ in
 ]->
 [	
 	Out( BLE_PKa ),
-	User_Agent_State3($user_name, $device_name, $reg_endpoint, IOcapA, ~SKa, OOB_rb, Cb, ~Na)
+	User_Agent_State3($user_name, $device_name, $reg_endpoint, IOcapA, ~SKa, ~Na)
 ]
 
 
@@ -256,14 +239,16 @@ let
 	
 	IOcapB = <'IO_Yes', 'OOB_No', 'AuthReq_MITM', 'etc'> //
 	PKb = 'g'^~SKb
-	BLE_PKb = <$device_name, $user_name, IOcapB, PKb, ~Nb>
+	Cb = f4(PKb, PKa, ~Nb, '0')
+	BLE_PKb = <$device_name, $user_name, IOcapB, PKb, ~Nb, Cb>
 
 	DHKey = PKa ^ ~SKb
+	Vb = g2(PKa, PKb, Na, ~Nb) //numeric comparision
 in
 [ 
 	In( BLE_PKa ), 
 	Fr(~Nb),
-	EV_State0($device_name, $reg_endpoint, ~SKb, ~OOB_rb)
+	EV_State0($device_name, $reg_endpoint, ~SKb)
 ] 
 --[
 	// Verifications
@@ -278,7 +263,9 @@ in
 ]->
 [	
 	Out( BLE_PKb ),
-	EV_State4($device_name, $reg_endpoint, $user_name, IOcapA, IOcapB, ~SKb, PKa, DHKey, ~Nb, Na, ~OOB_rb)
+	EV_State4($device_name, $reg_endpoint, $user_name, IOcapA, IOcapB, ~SKb, PKa, DHKey, ~Nb, Na),
+	//Out_S_V(<$device_name, $user_name, 'same_device_combination'>),
+	Out_S_V(<$device_name, $user_name, Vb, 'numeric_comparision'>) //assuming device confirmation by user
 ]
 
 
@@ -290,33 +277,37 @@ in
 
 rule User_Agent_connects_to_EV5:
 let
-	BLE_PKb = <$device_name, $user_name, IOcapB, PKb, Nb>
-	Cb_prime = f4(PKb, PKb, OOB_rb, '0')	
-	DHKey = PKb ^ ~SKa
-
 	//Authentication stage 2:
 	PKa = 'g'^~SKa
 	A = $user_name
 	B = $device_name
 
+	BLE_PKb = <$device_name, $user_name, IOcapB, PKb, Nb, Cb>
+	Cb_prime = f4(PKb, PKa, Nb, '0')	
+	DHKey = PKb ^ ~SKa
+
 	MacKey_LTK = f5(DHKey, ~Na, Nb, A, B, '0', '1', 'btle', '6C888391_AAF5A538_60370BDB_5A6083BE')
 	MacKey = fst(MacKey_LTK)
 	LTK = snd(MacKey_LTK)
-	Ea = f6(MacKey, ~Na, Nb, OOB_rb, IOcapA, A, B) //rb = OOB_rb
 
+	Va = g2(PKa, PKb, ~Na, Nb) //numeric comparision
+
+	rb = '0'
+	Ea = f6(MacKey, ~Na, Nb, rb, IOcapA, A, B) //
 	BLE_Ea = <$user_name, $device_name, Ea>
 in
 [ 
-	User_Agent_State3($user_name, $device_name, $reg_endpoint, IOcapA, ~SKa, OOB_rb, Cb, ~Na),
-	In( BLE_PKb )
+	User_Agent_State3($user_name, $device_name, $reg_endpoint, IOcapA, ~SKa, ~Na),
+	In( BLE_PKb ),
+	In_S_V(<$device_name, $user_name, Vb, 'numeric_comparision'>) //assuming device confirmation by user
 ] 
 --[
 	// Verifications
 	NEq('g', PKb),
 	Eq(Cb, Cb_prime),
+	Eq(Va, Vb),
 
 	// Correctness events
-	OOB_rb(OOB_rb),
 	User_Agent_connects_to_EV5(DHKey),
 	User_Agent_connects_to_EV5_LTK($user_name, $device_name, LTK),
 	User_Agent_connects_to_EV5_SK($user_name, $device_name, ~SKa),
@@ -345,11 +336,12 @@ let
 	Eb = f6(MacKey, ~Nb, Na, '0', IOcapB, B, A) //ra = 0
 	BLE_Eb = <$device_name, $user_name, Eb>
 
-	Ea_prime = f6(MacKey, Na, ~Nb, ~OOB_rb, IOcapA, A, B) //rb = ~OOB_rb
+	rb = '0'
+	Ea_prime = f6(MacKey, Na, ~Nb, rb, IOcapA, A, B) //
 in
 [ 
 	In(BLE_Ea),
-	EV_State4($device_name, $reg_endpoint, $user_name, IOcapA, IOcapB, ~SKb, PKa, DHKey, ~Nb, Na, ~OOB_rb)
+	EV_State4($device_name, $reg_endpoint, $user_name, IOcapA, IOcapB, ~SKb, PKa, DHKey, ~Nb, Na)
 ] 
 --[
 	// Verifications
@@ -588,13 +580,19 @@ in
 
 rule EV_prepares_Token_Request1: //now: Device Authorization Request
 let
-	authorization_details = <$emsp_endpointX, contract_params, $evId> 
-	oauth_push = <'device_authorization', $client_id, $scope, authorization_details> // client_id=oem-app=real ID?
+	authorization_details = <$emsp_endpointX, contract_params, $device_name> 
+	
+	OAuth_PK = pk(~OAuth_SK)
+	private_key_jwt_tbs = <$OEM_Name, $device_name, $emsp_endpointX, ~jti, $exp, $iat, OAuth_PK>
+	private_key_jwt = <private_key_jwt_tbs, sign(private_key_jwt_tbs, ~OAuth_SK)>
+
+	oauth_push = <'device_authorization', private_key_jwt, $scope, authorization_details> // client_id=oem-app=real ID?
 in
 [ 
-	!EV_ID_device($device_name, $reg_endpoint, $evId),
 	EV_State_prov1($device_name, $reg_endpoint, $user_name, LTK, user_ip, $emsp_endpointX, contract_params),
+	!OEM_OAuth_Sk( $OEM_Name, $device_name, ~OAuth_SK ),
 	!EMSP_Pk( $emsp_endpointX, EMSP_PK ),
+	Fr(~jti),
 	Fr(~TLS_Key_EV) //simplified TLS setup; allows spoofing of client
 ] 
 --[
@@ -607,13 +605,15 @@ in
 ]->
 [	
 	Out(<$EV_pub_endpoint, $emsp_endpointX, senc(oauth_push, ~TLS_Key_EV), aenc(~TLS_Key_EV, EMSP_PK)>),
-	EV_State_tok1($device_name, $reg_endpoint, $user_name, LTK, user_ip, $emsp_endpointX, contract_params, $EV_pub_endpoint, $evId, ~TLS_Key_EV, $client_id)
+	EV_State_tok1($device_name, $reg_endpoint, $user_name, LTK, user_ip, $emsp_endpointX, contract_params, $EV_pub_endpoint, ~TLS_Key_EV)
 ]
 
 rule EV_prepares_Token_Request2:
 let
-	authorization_details = <emsp_endpointX_in2, contract_params, evId>
-	oauth_push = <'device_authorization', $client_id, $scope, authorization_details>
+	authorization_details = <emsp_endpointX_in2, contract_params, $device_name>
+	private_key_jwt_tbs = <$OEM_Name, $device_name, $emsp_endpointX, jti, exp, iat, OAuth_PK>
+	private_key_jwt = <private_key_jwt_tbs, private_key_jwt_sig>
+	oauth_push = <'device_authorization', private_key_jwt, $scope, authorization_details>
 
 	device_authorization_res = <'device_authorization_res', ~device_code, ~user_code, $verification_uri>
 
@@ -621,6 +621,7 @@ let
 in
 [ 
 	!EMSP_Sk( $emsp_endpointX, ~EMSP_SK ),
+	!OEM_OAuth_Pk( $OEM_Name, $device_name, OAuth_PK ), //via an OpenID Federation that the identity provider trusts.
 	In(<$EV_pub_endpoint, emsp_endpointX_in1, senc(oauth_push, TLS_Key_EV), enc_TLS_Key_EV>),
 	Fr(~device_code),
 	Fr(~user_code)
@@ -630,6 +631,8 @@ in
 	Eq($emsp_endpointX, emsp_endpointX_in1), 
 	Eq($emsp_endpointX, emsp_endpointX_in2), 
 	OnlyOnce(<'EMSP_EV', TLS_Key_EV>), //provided by TLS
+	OnlyOnce(<'EMSP_nonce_OAuth_PK', OAuth_PK, jti>), //unique nonce that the identity provider remembers for the validity period of the JWT
+	Eq(verify(private_key_jwt_sig, private_key_jwt_tbs, OAuth_PK), true), 
 
 	// Correctness events
 	EV_prepares_Token_Request2(),
@@ -639,7 +642,7 @@ in
 ]->
 [	
 	Out(<$emsp_endpointX, $EV_pub_endpoint, senc(device_authorization_res, TLS_Key_EV)>),
-	EMSP_State_tok1($emsp_endpointX, $EV_pub_endpoint, oauth_push, ~device_code, ~user_code, $verification_uri, TLS_Key_EV)
+	EMSP_State_tok1($emsp_endpointX, $EV_pub_endpoint, oauth_push, ~device_code, ~user_code, $verification_uri, $device_name, TLS_Key_EV)
 ]
 
 rule EV_prepares_Token_Request3:
@@ -651,7 +654,7 @@ let
 in
 [ 
 	In(<$emsp_endpointX, $EV_pub_endpoint, senc(device_authorization_res, ~TLS_Key_EV)>),
-	EV_State_tok1($device_name, $reg_endpoint, $user_name, LTK, user_ip, $emsp_endpointX, contract_params, $EV_pub_endpoint, $evId, ~TLS_Key_EV, $client_id)
+	EV_State_tok1($device_name, $reg_endpoint, $user_name, LTK, user_ip, $emsp_endpointX, contract_params, $EV_pub_endpoint, ~TLS_Key_EV)
 ]
 --[
 	// Correctness events
@@ -662,8 +665,8 @@ in
 ]->
 [	
 	Out(emsp_req_uri_bt),
-	Out_S_V(<$device_name, $evId, 'ev_evID', ~user_code>),
-	EV_State_tok3($device_name, $reg_endpoint, $user_name, LTK, user_ip, $emsp_endpointX, contract_params, $EV_pub_endpoint, $evId, ~TLS_Key_EV, $client_id, ~device_code, ~user_code)
+	Out_S_V(<$device_name, $device_name, 'ev_device_name', ~user_code>),
+	EV_State_tok3($device_name, $reg_endpoint, $user_name, LTK, user_ip, $emsp_endpointX, contract_params, $EV_pub_endpoint, ~TLS_Key_EV, ~device_code, ~user_code)
 ]
 
 
@@ -710,20 +713,20 @@ in
 ]->
 [
 	User_Agent_State_auth1($user_name, $device_name, $reg_endpoint, LTK, $user_ip, emsp_endpointX, $contract_params, verification_uri, ~TLS_Key_UA, $account_name, user_code),
-	Out(<$user_ip, <emsp_endpointX, verification_uri>, senc(<'Authorization_Request', $account_name, ~pw, user_code>, ~TLS_Key_UA), aenc(~TLS_Key_UA, EMSP_PK)>) // TODO: user:pw
+	Out(<$user_ip, <emsp_endpointX, verification_uri>, senc(<'Authorization_Request', $account_name, ~pw, user_code>, ~TLS_Key_UA), aenc(~TLS_Key_UA, EMSP_PK)>) //
 ]
 
 rule User_Agent_starts_Authorization_Request2:
 let
-	authorization_details = <$emsp_endpointX, contract_params, evId>
-	oauth_push = <'device_authorization', $client_id, $scope, authorization_details>
+	authorization_details = <$emsp_endpointX, contract_params, $device_name>
+	oauth_push = <'device_authorization', private_key_jwt, $scope, authorization_details>
 
 	TLS_Key_UA = adec(enc_TLS_Key_UA, ~EMSP_SK)
 in
 [ 
 	!EMSP_Sk( $emsp_endpointX, ~EMSP_SK ),
 	!User_Password(user_name_NA, account_name, pw, $emsp_endpointX),
-	EMSP_State_tok1($emsp_endpointX, $EV_pub_endpoint, oauth_push, ~device_code, ~user_code, $verification_uri, TLS_Key_EV),
+	EMSP_State_tok1($emsp_endpointX, $EV_pub_endpoint, oauth_push, ~device_code, ~user_code, $verification_uri, $device_name, TLS_Key_EV),
 	In(<user_ip, <$emsp_endpointX, $verification_uri>, senc(<'Authorization_Request', account_name, pw, user_code_in>, TLS_Key_UA), enc_TLS_Key_UA>)
 ]
 --[
@@ -742,9 +745,9 @@ in
 	Honest(user_ip),
 
 	//Authentication events
-	RunningEMSP_EV_auth($emsp_endpointX, evId, ~device_code),
+	RunningEMSP_EV_auth($emsp_endpointX, $device_name, ~device_code),
 	RunningEMSP_User_auth($emsp_endpointX, account_name, ~user_code),
-	RunningEMSP_User_auth2($emsp_endpointX, account_name, <evId, ~user_code>)
+	RunningEMSP_User_auth2($emsp_endpointX, account_name, <$device_name, ~user_code>)
 ]->
 [
 	EMSP_State_auth1($emsp_endpointX, $EV_pub_endpoint, oauth_push, $verification_uri, user_ip, TLS_Key_EV, ~device_code, account_name),
@@ -753,10 +756,11 @@ in
 
 rule User_Agent_starts_Authorization_Request3:
 let
-	authorization_details = <emsp_endpointX, $contract_params, evId>
+	authorization_details = <emsp_endpointX, $contract_params, $device_name>
 in
 [ 
 	User_Agent_State_auth1($user_name, $device_name, $reg_endpoint, LTK, $user_ip, emsp_endpointX, $contract_params, verification_uri, ~TLS_Key_UA, $account_name, user_code),
+	User_State_sel1($user_name, $device_name, emsp_endpointX, $contract_params),
 	In(<emsp_endpointX, $user_ip, senc(<'Authorization_Response', authorization_details>, ~TLS_Key_UA)>)	
 ]
 --[
@@ -771,70 +775,22 @@ in
 	RunningUA_EV_user_code($user_name, $device_name, <emsp_endpointX, user_code>),
 	RunningUA_EV_user_code3($user_name, $device_name, <user_code>),
 	CommitUser_EMSP_auth($account_name, emsp_endpointX, user_code),
-	CommitUser_EMSP_auth2($account_name, emsp_endpointX, <evId, user_code>),
+	CommitUser_EMSP_auth2($account_name, emsp_endpointX, <$device_name, user_code>),
 	Honest(emsp_endpointX),
 	Honest($user_name),
 	Honest($account_name),
 	Honest($user_ip)
-	// CommitEV_EMSP_auth_code(evId, emsp_endpointX, authorization_code),
+	// CommitEV_EMSP_auth_code($device_name, emsp_endpointX, authorization_code),
 	// Honest($device_name),
-	// Honest(evId)
+	// Honest($device_name)
 ]->
 [
-	//User_Agent_State_auth3($user_name, $device_name, $reg_endpoint, LTK, $user_ip, emsp_endpointX, $contract_params, verification_uri, evId, ~TLS_Key_UA, $account_name),
-	Out_S_V(<$user_name, evId, $contract_params, 'user_contract_params', user_code>)
+	//Out_S_V(<$user_name, $device_name, $contract_params, 'user_contract_params', user_code>),
+	Out(<$user_ip, <emsp_endpointX, verification_uri>, senc(<'Authorization_Grant', $account_name, $device_name>, ~TLS_Key_UA)>) // VIN check assumed by same device_name
 ]
 
-rule User_Agent_starts_Authorization_Request4:
-[ 
-	In_S_V(<$user_name, evId_in, $contract_params, 'user_contract_params', user_code>),
-	In_S_V(<$device_name, $evId, 'ev_evID', user_code_ev>),
-	User_State_sel1($user_name, $device_name, emsp_endpointX, $contract_params)
-]
---[
-	// Verifications
-	Eq($evId, evId_in), 
-	Eq(user_code, user_code_ev), 
-	//OnlyOnce('User_Agent_starts_Authorization_Request4'),
 
-	// Correctness events
-	User_Agent_starts_Authorization_Request4(),
-	OnlyOnce_Correctness('User_Agent_starts_Authorization_Request4')
-]->
-[
-	Out_S_V(<$user_name, $evId, user_code, 'evIdOK'>)
-]
 
-/*
-rule User_Agent_starts_Authorization_Request7:
-let
-	emsp_auth_code = <emsp_endpointX, authorization_code> //TODO: change?
-	redirect_auth = <$user_ip, $reg_endpoint, 'redirect_auth', emsp_auth_code>
-	redirect_auth_bt = <$user_name, $device_name, senc(redirect_auth, LTK)>
-in
-[ 
-
-	User_Agent_State_auth3($user_name, $device_name, $reg_endpoint, LTK, $user_ip, emsp_endpointX, $contract_params, verification_uri, evId, ~TLS_Key_UA, $account_name),
-	In_S_V(<$user_name, evId, $contract_params, 'evIdOK'>)
-	//User_Agent_State_auth5($user_name, $device_name, $reg_endpoint, LTK, $user_ip, emsp_endpointX, $contract_params, verification_uri, evId, ~TLS_Key_UA, $account_name),
-	//In(<emsp_endpointX, $user_ip, senc(<'Authorization_Request_Redirect', authorization_code>, ~TLS_Key_UA)>)	
-]
---[
-	// Correctness events
-	User_Agent_starts_Authorization_Request7(),
-	User_Agent_starts_Authorization_Request7_LTK($user_name, $device_name, LTK),
-	User_Agent_starts_Authorization_Request7_auth_code($user_name, $device_name, emsp_endpointX, $account_name, authorization_code),
-	OnlyOnce_Correctness('User_Agent_starts_Authorization_Request7'),
-
-	//Authentication events
-	RunningUA_EV_auth_code($user_name, $device_name, <emsp_endpointX, authorization_code>),
-	RunningUA_EV_auth_code2($user_name, evId, <emsp_endpointX, authorization_code>),
-	RunningUA_EV_auth_code3($user_name, $device_name, <authorization_code>)
-]->
-[
-	Out(redirect_auth_bt)
-]
-*/
 
 /******************************************/
 // 17. Token Request
@@ -844,11 +800,17 @@ rule Token_Request1:
 let
 	//redirect_auth = <$user_ip, $reg_endpoint, 'redirect_auth', authorization_code>
 
-	device_access_token_req = <'device_access_token_req', $client_id, device_code>
+	OAuth_PK = pk(~OAuth_SK)
+	private_key_jwt2_tbs = <$OEM_Name, $device_name, $emsp_endpointX, ~jti, $exp, $iat, OAuth_PK>
+	private_key_jwt2 = <private_key_jwt2_tbs, sign(private_key_jwt2_tbs, ~OAuth_SK)>
+
+	device_access_token_req = <'device_access_token_req', private_key_jwt2, device_code>
 in
 [ 
-	EV_State_tok3($device_name, $reg_endpoint, $user_name, LTK, user_ip, $emsp_endpointX, contract_params, $EV_pub_endpoint, $evId, ~TLS_Key, $client_id, device_code, user_code),
-	In_S_V(<$user_name, $evId, user_code, 'evIdOK'>)
+	EV_State_tok3($device_name, $reg_endpoint, $user_name, LTK, user_ip, $emsp_endpointX, contract_params, $EV_pub_endpoint, ~TLS_Key, device_code, user_code),
+	!OEM_OAuth_Sk( $OEM_Name, $device_name, ~OAuth_SK ),
+	//In_S_V(<$user_name, $device_name, user_code, 'device_nameOK'>),
+	Fr(~jti)
 ]
 --[
 	//OnlyOnce('Token_Request1'),
@@ -862,43 +824,49 @@ in
 
 	//Authentication events
 	//RunningEV_EMSP_code_verifier($EV_pub_endpoint, $emsp_endpointX, ~code_verifier),
-	RunningEV_EMSP_auth_dev($evId, $emsp_endpointX, device_code),
+	RunningEV_EMSP_auth_dev($device_name, $emsp_endpointX, device_code),
 	//Authentication events
 	CommitEV_UA_user_code($device_name, $user_name, <$emsp_endpointX, user_code>),
 	CommitEV_UA_user_code3($device_name, $user_name, <user_code>),
-	CommitEV_EMSP_auth($evId, $emsp_endpointX, device_code),
+	CommitEV_EMSP_auth($device_name, $emsp_endpointX, device_code),
 	Honest($emsp_endpointX),
 	Honest($EV_pub_endpoint),
 	Honest($device_name),
-	Honest($evId),
 	Honest($user_name) //no pw leak
 ]->
 [
 	Out(<$EV_pub_endpoint, $emsp_endpointX, senc(device_access_token_req, ~TLS_Key)>),
-	EV_State_tokReq1($device_name, $reg_endpoint, $user_name, LTK, user_ip, $emsp_endpointX, contract_params, $EV_pub_endpoint, $evId, ~TLS_Key)
+	EV_State_tokReq1($device_name, $reg_endpoint, $user_name, LTK, user_ip, $emsp_endpointX, contract_params, $EV_pub_endpoint, ~TLS_Key)
 ]
 
 
 rule Token_Request2:
 let
-	authorization_details = <emsp_endpointX_in, contract_params, evId>
-	oauth_push = <'device_authorization', $client_id, $scope, authorization_details>
+	authorization_details = <emsp_endpointX_in, contract_params, device_name>
 
-	device_access_token_req = <'device_access_token_req', $client_id_in, device_code_in>
+	private_key_jwt_tbs = <$OEM_Name, device_name, $emsp_endpointX, jti, exp, iat, OAuth_PK>
+	private_key_jwt = <private_key_jwt_tbs, private_key_jwt_sig>
+	oauth_push = <'device_authorization', private_key_jwt, $scope, authorization_details>
+
+	private_key_jwt2_tbs = <$OEM_Name, device_name, $emsp_endpointX, jti2, exp, iat, OAuth_PK>
+	private_key_jwt2 = <private_key_jwt2_tbs, private_key_jwt2_sig>
+	device_access_token_req = <'device_access_token_req', private_key_jwt2, device_code_in>
 	
 in
 [ 
 	EMSP_State_auth1($emsp_endpointX, $EV_pub_endpoint, oauth_push, $verification_uri, user_ip, TLS_Key, ~device_code, account_name),
+	In(<user_ip, <$emsp_endpointX, $verification_uri>, senc(<'Authorization_Grant', account_name, device_name>, TLS_Key_UA)>),
 	//EMSP_State_auth6($emsp_endpointX, $EV_pub_endpoint, oauth_push, $verification_uri, user_ip, ~authorization_code, TLS_Key),
-	!EMSP_Sk( $emsp_endpointX, ~EMSP_SK ),
 	In(<$EV_pub_endpoint, $emsp_endpointX, senc(device_access_token_req, TLS_Key)>),
+	!OEM_OAuth_Pk( $OEM_Name, device_name, OAuth_PK ), //via an OpenID Federation that the identity provider trusts.
 	Fr(~access_token)
 ]
 --[
 	// Verifications
 	Eq(~device_code, device_code_in), 
-	Eq($client_id, $client_id_in),
 	//Eq(h(code_verifier), code_challenge), 
+	Eq(verify(private_key_jwt2_sig, private_key_jwt2_tbs, OAuth_PK), true), 
+	OnlyOnce(<'EMSP_nonce_OAuth_PK', OAuth_PK, jti2>), //unique nonce that the identity provider remembers for the validity period of the JWT
 
 	// Correctness events
 	Token_Request2(),
@@ -907,15 +875,15 @@ in
 
 	//Authentication events
 	//CommitEMSP_EV_code_verifier($emsp_endpointX, $EV_pub_endpoint, code_verifier),
-	CommitEMSP_EV_auth_dev($emsp_endpointX, evId, ~device_code),
+	CommitEMSP_EV_auth_dev($emsp_endpointX, device_name, ~device_code),
 	Honest($emsp_endpointX),
 	Honest($EV_pub_endpoint),
-	Honest(evId),
+	Honest(device_name),
 	Honest(account_name)
 ]->
 [
-	Out(<$emsp_endpointX, $EV_pub_endpoint, senc(<'access_token', evId, ~access_token>, TLS_Key)>),
-	EMSP_State_tokReq2($emsp_endpointX, $EV_pub_endpoint, oauth_push, $verification_uri, user_ip, evId, ~access_token, TLS_Key, ~device_code, account_name)
+	Out(<$emsp_endpointX, $EV_pub_endpoint, senc(<'access_token', device_name, ~access_token>, TLS_Key)>),
+	EMSP_State_tokReq2($emsp_endpointX, $EV_pub_endpoint, oauth_push, $verification_uri, user_ip, device_name, ~access_token, TLS_Key, ~device_code, account_name)
 ]
 
 
@@ -923,75 +891,79 @@ in
 rule Token_Request3:
 let
 	PKev = pk(~SKev)
-	ccsr_tbs = <'ccsr', PKev, $ccsr_data>
+	attributes = <$emsp_endpointX, $device_name, access_token>
+	ccsr_tbs = <'ccsr', PKev, $ccsr_data, attributes>
 	ccsr = <ccsr_tbs, sign(ccsr_tbs, ~SKev)>
 in
 [ 
-	In(<$emsp_endpointX, $EV_pub_endpoint, senc(<'access_token', evId_in, access_token>, ~TLS_Key)>),
+	In(<$emsp_endpointX, $EV_pub_endpoint, senc(<'access_token', device_name_in, access_token>, ~TLS_Key)>),
 	Fr(~SKev),
-	EV_State_tokReq1($device_name, $reg_endpoint, $user_name, LTK, user_ip, $emsp_endpointX, contract_params, $EV_pub_endpoint, $evId, ~TLS_Key)
+	EV_State_tokReq1($device_name, $reg_endpoint, $user_name, LTK, user_ip, $emsp_endpointX, contract_params, $EV_pub_endpoint, ~TLS_Key)
 ]
 --[
 	// Verifications
-	Eq($evId, evId_in), 
+	Eq($device_name, device_name_in), 
 
 	// Correctness events
 	Token_Request3(),
 	OnlyOnce_Correctness('Token_Request3'),
-	Token_Request3_access_token($EV_pub_endpoint, $emsp_endpointX, <'access_token', evId_in, access_token>),
+	Token_Request3_access_token($EV_pub_endpoint, $emsp_endpointX, <'access_token', device_name_in, access_token>),
 	BT_LTK(LTK),
-	Token_Request3_cert_req($EV_pub_endpoint, $emsp_endpointX, <'cert_req', access_token, $evId, ccsr>),
+	Token_Request3_cert_req($EV_pub_endpoint, $emsp_endpointX, <'cert_req', access_token, $device_name, ccsr>),
 
 	//Authentication events
-	RunningEV_EMSP($evId, $emsp_endpointX, PKev),
+	RunningEV_EMSP($device_name, $emsp_endpointX, PKev),
 	RunningEV_EMSP2($EV_pub_endpoint, $emsp_endpointX, PKev),
 	RunningEV_EMSP_access_token($EV_pub_endpoint, $emsp_endpointX, access_token)
 ]->
 [
-	Out(<$EV_pub_endpoint, $emsp_endpointX, senc(<'cert_req', access_token, $evId, ccsr>, ~TLS_Key)>),
-	EV_State_tokReq3($device_name, $reg_endpoint, $user_name, LTK, user_ip, $emsp_endpointX, contract_params, $EV_pub_endpoint, ~SKev, $evId, ~TLS_Key)
+	Out(<$EV_pub_endpoint, $emsp_endpointX, senc(<'cert_req', access_token, $device_name, ccsr>, ~TLS_Key)>),
+	EV_State_tokReq3($device_name, $reg_endpoint, $user_name, LTK, user_ip, $emsp_endpointX, contract_params, $EV_pub_endpoint, ~SKev, ~TLS_Key)
 ]
 
 
 rule Token_Request4:
 let
-	authorization_details = <emsp_endpointX_in, contract_params, evId>
-	oauth_push = <'device_authorization', $client_id, $scope, authorization_details>
+	authorization_details = <emsp_endpointX_in, contract_params, device_name>
+	oauth_push = <'device_authorization', private_key_jwt, $scope, authorization_details>
 	
-	ccsr_tbs = <'ccsr', PKev, ccsr_data>
+	attributes = <$emsp_endpointX, device_name, access_token_in>
+	ccsr_tbs = <'ccsr', PKev, ccsr_data, attributes>
 	ccsr = <ccsr_tbs, sign_ccsr_tbs>
 
-	contract_cert_tbs = <'contract_cert', $EMAID, PKev>
+	contract_cert_tbs = <'contract_cert', $emsp_endpointX, $EMAID, PKev>
 	contract_cert = <contract_cert_tbs, sign(contract_cert_tbs, ~EMSP_SK)>
 in
 [ 
-	EMSP_State_tokReq2($emsp_endpointX, $EV_pub_endpoint, oauth_push, $verification_uri, user_ip, evId, ~access_token, TLS_Key, ~device_code, account_name),
+	EMSP_State_tokReq2($emsp_endpointX, $EV_pub_endpoint, oauth_push, $verification_uri, user_ip, device_name, ~access_token, TLS_Key, ~device_code, account_name),
 	!EMSP_Sk( $emsp_endpointX, ~EMSP_SK ),
-	In(<$EV_pub_endpoint, $emsp_endpointX, senc(<'cert_req', access_token_in, evId_in, ccsr>, TLS_Key)>)
+	In(<$EV_pub_endpoint, $emsp_endpointX, senc(<'cert_req', access_token_in, device_name_in, ccsr>, TLS_Key)>)
 ]
 --[
 	// Verifications
-	Eq(evId, evId_in), 
+	Eq(device_name, device_name_in), 
 	Eq(~access_token, access_token_in), 
 	Eq(verify(sign_ccsr_tbs, ccsr_tbs, PKev), true), 
+
+	//OnlyOnce(<'EMSP_CC', PKev>), //
 
 	// Correctness events
 	Token_Request4(),
 	OnlyOnce_Correctness('Token_Request4'),
-	Token_Request4_cert_req($EV_pub_endpoint, $emsp_endpointX, <'cert_req', access_token_in, evId_in, ccsr>),
+	Token_Request4_cert_req($EV_pub_endpoint, $emsp_endpointX, <'cert_req', access_token_in, device_name_in, ccsr>),
 	TLS_Key($emsp_endpointX, TLS_Key),
 
 	//Authentication events
-	CommitEMSP_EV($emsp_endpointX, evId, PKev),
+	CommitEMSP_EV($emsp_endpointX, device_name, PKev),
 	CommitEMSP_EV2($emsp_endpointX, $EV_pub_endpoint, PKev),
 	CommitEMSP_EV_access_token($emsp_endpointX, $EV_pub_endpoint, ~access_token),
 	Honest($emsp_endpointX),
 	Honest($EV_pub_endpoint),
-	Honest(evId),
+	Honest(device_name),
 	Honest(account_name), //no pw leak
 	
 	//Authentication events
-	RunningEMSP_EV_CC($emsp_endpointX, evId, contract_cert_tbs)
+	RunningEMSP_EV_CC($emsp_endpointX, device_name, contract_cert_tbs)
 ]->
 [
 	Out(<$emsp_endpointX, $EV_pub_endpoint, senc(<'contract_cert', contract_cert>, TLS_Key)>)
@@ -1000,11 +972,11 @@ in
 rule Token_Request5:
 let
 	PKev = pk(~SKev)
-	contract_cert_tbs = <'contract_cert', $EMAID, PKev>
+	contract_cert_tbs = <'contract_cert', $emsp_endpointX, $EMAID, PKev>
 	contract_cert = <contract_cert_tbs, sign_contract_cert_tbs>
 in
 [ 
-	EV_State_tokReq3($device_name, $reg_endpoint, $user_name, LTK, user_ip, $emsp_endpointX, contract_params, $EV_pub_endpoint, ~SKev, $evId, ~TLS_Key),
+	EV_State_tokReq3($device_name, $reg_endpoint, $user_name, LTK, user_ip, $emsp_endpointX, contract_params, $EV_pub_endpoint, ~SKev, ~TLS_Key),
 	!EMSP_Pk( $emsp_endpointX, EMSP_PK ),
 	In(<$emsp_endpointX, $EV_pub_endpoint, senc(<'contract_cert', contract_cert>, ~TLS_Key)>)
 ]
@@ -1017,10 +989,10 @@ in
 	OnlyOnce_Correctness('Token_Request5'),
 
 	//Authentication events
-	CommitEV_EMSP_CC($evId, $emsp_endpointX, contract_cert_tbs),
+	CommitEV_EMSP_CC($device_name, $emsp_endpointX, contract_cert_tbs),
 	Honest($emsp_endpointX),
 	Honest($EV_pub_endpoint),
-	Honest($evId),
+	Honest($device_name),
 	Honest($user_name) //no pw leak
 ]->
 [
@@ -1032,7 +1004,7 @@ in
 
 // **** lemmas ****
 
-lemma corr_User_LTK [reuse]:
+lemma reuse_User_LTK [reuse]:
 "
 All user_name device_name LTK #i .
 User_Agent_starts_Authorization_Request3_LTK(user_name, device_name, LTK) @ i 
@@ -1040,7 +1012,7 @@ User_Agent_starts_Authorization_Request3_LTK(user_name, device_name, LTK) @ i
 	Ex  #j . 
 		User_Agent_connects_to_EV5_LTK(user_name, device_name, LTK) @ j & #j<#i
 "
-lemma corr_User_SK [reuse]:
+lemma reuse_User_SK [reuse]:
 "
 All user_name device_name SK #i .
 User_Agent_connects_to_EV5_SK(user_name, device_name, SK) @ i 
@@ -1050,7 +1022,7 @@ User_Agent_connects_to_EV5_SK(user_name, device_name, SK) @ i
 "
 
 
-lemma corr_EV_LTK [reuse]:
+lemma reuse_EV_LTK [reuse]:
 "
 All user_name device_name LTK #i .
 Token_Request1_LTK(device_name, user_name, LTK) @ i 
@@ -1059,18 +1031,9 @@ Token_Request1_LTK(device_name, user_name, LTK) @ i
 		User_Agent_connects_to_EV11_LTK(device_name, user_name, LTK) @ j & #j<#i
 "
 
-/*
-lemma corr_OOB_rb_secret [reuse]:
-"
-All OOB_rb #i .
-OOB_rb(OOB_rb) @ i 
-	==>
-	not(Ex  #j . 
-		K(OOB_rb)  @ j)
-"
-*/
 
-lemma corr_EV_LTK_UA [reuse]:
+/*
+lemma reuse_EV_LTK_UA [reuse]:
 "
 All user_name device_name LTK #i .
 Token_Request1_LTK(device_name, user_name, LTK) @ i 
@@ -1078,8 +1041,10 @@ Token_Request1_LTK(device_name, user_name, LTK) @ i
 	Ex  #j . 
 		User_Agent_connects_to_EV5_LTK(user_name, device_name, LTK)  @ j & #j<#i
 "
+*/
 
-lemma corr_Dev_Auth [reuse]:
+/*
+lemma reuse_Dev_Auth [reuse]:
 "
 All emsp data #i .
 EV_prepares_Token_Request3_dev_auth(emsp, data) @ i 
@@ -1088,7 +1053,7 @@ EV_prepares_Token_Request3_dev_auth(emsp, data) @ i
 	|
 	(Ex #kr . KeyReveal('LongTermKey_KeyReveal_EMSP', emsp) @ kr)
 "
-
+*/
 
 
 /*
@@ -1307,7 +1272,7 @@ exists-trace
 lemma correctness_simple8:
 exists-trace
 " Ex  #i0 #i3 #i4 #i5 #i11 #i12 #i15
-	  #i16 #i17 #i18 #i19 #i20 #i21 #i22 #i23 #i24 #i25 #i26
+	  #i16 #i17 #i18 #i19 #i20 #i21 #i22 #i23 #i24 #i25
 	   DHKey1 DHKey2 .
 	EV_starts_Setup() @i0
 	& User_Agent_connects_to_EV3() @i3
@@ -1328,7 +1293,6 @@ exists-trace
 	& User_Agent_starts_Authorization_Request1() @i23
 	& User_Agent_starts_Authorization_Request2() @i24
 	& User_Agent_starts_Authorization_Request3() @i25
-	& User_Agent_starts_Authorization_Request4() @i26
 	//& User_Agent_starts_Authorization_Request7() @i29
 
 
@@ -1349,7 +1313,7 @@ exists-trace
 lemma correctness_simple9:
 exists-trace
 " Ex  #i0 #i3 #i4 #i5 #i11 #i12 #i15
-	  #i16 #i17 #i18 #i19 #i20 #i21 #i22 #i23 #i24 #i25 #i26 
+	  #i16 #i17 #i18 #i19 #i20 #i21 #i22 #i23 #i24 #i25 
 	  #i30 #i31 #i32 #i33 #i34 DHKey1 DHKey2 .
 	EV_starts_Setup() @i0
 	& User_Agent_connects_to_EV3() @i3
@@ -1370,7 +1334,6 @@ exists-trace
 	& User_Agent_starts_Authorization_Request1() @i23
 	& User_Agent_starts_Authorization_Request2() @i24
 	& User_Agent_starts_Authorization_Request3() @i25
-	& User_Agent_starts_Authorization_Request4() @i26
 	//& User_Agent_starts_Authorization_Request7() @i29
 
 	& Token_Request1() @i30
@@ -1393,7 +1356,7 @@ exists-trace
 	)
 "
 
-
+/*
 lemma auth1_weak_UA_EV:
 "
 All device_name user_name nonces #i .
@@ -1470,7 +1433,7 @@ All device_name user_name nonces #i .
 		)
 	)
 "
-
+*/
 
 lemma auth2_weak_EV_UA0:
 "
@@ -1626,6 +1589,7 @@ All user emsp key #i .
 "
 
 
+/*
 lemma auth4_non_inj_EMSP_User:
 "
 All user emsp user_code #i .
@@ -1649,6 +1613,7 @@ All user emsp user_code #i .
 		)
 	)
 "
+*/
 /*
 lemma auth4_inj_EMSP_User:
 "
@@ -1680,6 +1645,7 @@ All user emsp user_code #i .
 "
 */
 
+/*
 lemma auth4_non_inj_EMSP_User2:
 "
 All user emsp ev_and_user_code #i .
@@ -1703,6 +1669,7 @@ All user emsp ev_and_user_code #i .
 		)
 	)
 "
+*/
 
 /*
 lemma auth4_inj_EMSP_User2:
@@ -1816,19 +1783,20 @@ All ev emsp authorization_code #i .
 	)
 "*/
 
+
 lemma auth5_non_inj_EV_EMSP:
 "
-All emsp evId PKev #i .
+All emsp device_name PKev #i .
 	(
 		(
-			CommitEMSP_EV(emsp, evId, PKev) @ i 
+			CommitEMSP_EV(emsp, device_name, PKev) @ i 
 		)
 		==>
 		(
 			(
 				(Ex #j . 
 					(
-						RunningEV_EMSP(evId, emsp, PKev) @ j
+						RunningEV_EMSP(device_name, emsp, PKev) @ j
 						& 
 						(#j<#i) 
 					)
@@ -1843,22 +1811,22 @@ All emsp evId PKev #i .
 
 lemma auth5_inj_EV_EMSP:
 "
-All emsp evId PKev #i .
+All emsp device_name PKev #i .
 	(
 		(
-			CommitEMSP_EV(emsp, evId, PKev) @ i 
+			CommitEMSP_EV(emsp, device_name, PKev) @ i 
 		)
 		==>
 		(
 			(
 				(Ex #j . 
 					(
-						RunningEV_EMSP(evId, emsp, PKev) @ j
+						RunningEV_EMSP(device_name, emsp, PKev) @ j
 						& 
 						(#j<#i) 
 						&
 						( not(
-							Ex emsp2 evId2 #i2 . ( CommitEMSP_EV(emsp2, evId2, PKev) @ i2 & not(#i2=#i) )
+							Ex emsp2 device_name2 #i2 . ( CommitEMSP_EV(emsp2, device_name2, PKev) @ i2 & not(#i2=#i) )
 							)
 						)
 					)
@@ -1874,17 +1842,17 @@ All emsp evId PKev #i .
 
 lemma auth6_non_inj_EMSP_EV_CC:
 "
-All emsp evId CC #i .
+All emsp device_name CC #i .
 	(
 		(
-			CommitEV_EMSP_CC(evId, emsp, CC) @ i 
+			CommitEV_EMSP_CC(device_name, emsp, CC) @ i 
 		)
 		==>
 		(
 			(
 				(Ex #j . 
 					(
-						RunningEMSP_EV_CC(emsp, evId, CC) @ j
+						RunningEMSP_EV_CC(emsp, device_name, CC) @ j
 						& 
 						(#j<#i) 
 					)
@@ -1899,22 +1867,22 @@ All emsp evId CC #i .
 
 lemma auth6_inj_EMSP_EV_CC:
 "
-All emsp evId CC #i .
+All emsp device_name CC #i .
 	(
 		(
-			CommitEV_EMSP_CC(evId, emsp, CC) @ i 
+			CommitEV_EMSP_CC(device_name, emsp, CC) @ i 
 		)
 		==>
 		(
 			(
 				(Ex #j . 
 					(
-						RunningEMSP_EV_CC(emsp, evId, CC) @ j
+						RunningEMSP_EV_CC(emsp, device_name, CC) @ j
 						& 
 						(#j<#i) 
 						&
 						( not(
-							Ex emsp2 evId2 #i2 . ( CommitEV_EMSP_CC(evId2, emsp2, CC) @ i2 & not(#i2=#i) )
+							Ex emsp2 device_name2 #i2 . ( CommitEV_EMSP_CC(device_name2, emsp2, CC) @ i2 & not(#i2=#i) )
 							)
 						)
 					)
