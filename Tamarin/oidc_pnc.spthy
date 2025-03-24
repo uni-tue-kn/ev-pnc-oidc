@@ -28,16 +28,16 @@ analyzed: oidc_pnc.spthy
   auth3_non_inj_User_EMSP (all-traces): verified (5030 steps)
   auth3_inj_User_EMSP (all-traces): verified (5050 steps)
   auth5_non_inj_EV_EMSP (all-traces): verified (8661 steps)
-  auth5_inj_EV_EMSP (all-traces): verified (43557 steps)
+  auth5_inj_EV_EMSP (all-traces): verified (245939 steps)
   auth6_non_inj_EMSP_EV_CC (all-traces): verified (8560 steps)
   auth6_inj_EMSP_EV_CC (all-traces): verified (8596 steps)
-  AUTO_typing (all-traces): verified (4941 steps)
+  AUTO_typing (all-traces): verified (4521 steps)
 
 ==============================================================================
 
-real	325m16,285s
-user	1170m52,795s
-sys	699m45,870s
+real	1504m38,987s
+user	2998m35,554s
+sys	2421m0,737s
 
 
 
@@ -891,7 +891,7 @@ in
 rule Token_Request3:
 let
 	PKev = pk(~SKev)
-	attributes = <$emsp_endpointX, $device_name, access_token>
+	attributes = <$emsp_endpointX, $device_name>//, access_token>
 	ccsr_tbs = <'ccsr', PKev, $ccsr_data, attributes>
 	ccsr = <ccsr_tbs, sign(ccsr_tbs, ~SKev)>
 in
@@ -927,7 +927,7 @@ let
 	authorization_details = <emsp_endpointX_in, contract_params, device_name>
 	oauth_push = <'device_authorization', private_key_jwt, $scope, authorization_details>
 	
-	attributes = <$emsp_endpointX, device_name, access_token_in>
+	attributes = <$emsp_endpointX, device_name>//, access_token_in>
 	ccsr_tbs = <'ccsr', PKev, ccsr_data, attributes>
 	ccsr = <ccsr_tbs, sign_ccsr_tbs>
 
